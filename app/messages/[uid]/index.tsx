@@ -594,7 +594,7 @@ const styles = StyleSheet.create({
 
   myBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#b3f5d177",
     borderBottomRightRadius: 0,
   },
 
