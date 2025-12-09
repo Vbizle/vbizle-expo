@@ -1,33 +1,33 @@
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
   Image,
-  TouchableOpacity,
-  TextInput,
+  Modal,
   ScrollView,
   StyleSheet,
-  Modal,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
 
 import { onAuthStateChanged } from "firebase/auth";
 import {
-  collectionGroup,
   collection,
-  query,
-  where,
-  getDocs,
+  collectionGroup,
   doc,
   getDoc,
-  orderBy,
+  getDocs,
   onSnapshot,
+  orderBy,
+  query,
+  where,
 } from "firebase/firestore";
 
 import { auth, db } from "@/firebase/firebaseConfig";
 
 /* ======================================================
-   PROFIL POPUP — Expo Versiyonu
+   PROFIL POPUP — Expo Versiyonu (BEYAZ TEMA)
 ====================================================== */
 function IdProfilePopup({
   user,
@@ -43,14 +43,9 @@ function IdProfilePopup({
     <Modal transparent animationType="fade">
       <View style={styles.popupBg}>
         <View style={styles.popupCard}>
-          <Image
-            source={{ uri: photo }}
-            style={styles.popupAvatar}
-          />
+          <Image source={{ uri: photo }} style={styles.popupAvatar} />
 
-          {user.vbId && (
-            <Text style={styles.popupId}>ID: {user.vbId}</Text>
-          )}
+          {user.vbId && <Text style={styles.popupId}>ID: {user.vbId}</Text>}
 
           <Text style={styles.popupName}>{user.name}</Text>
 
@@ -219,7 +214,7 @@ export default function MessagesPage() {
   if (loading || !me) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: "#fff" }}>Yükleniyor...</Text>
+        <Text style={{ color: "#111" }}>Yükleniyor...</Text>
       </View>
     );
   }
@@ -228,7 +223,7 @@ export default function MessagesPage() {
      UI
   ------------------------------------------------------ */
   return (
-    <View style={{ flex: 1, backgroundColor: "black", paddingHorizontal: 14 }}>
+    <View style={{ flex: 1, backgroundColor: "#fff", paddingHorizontal: 14 }}>
       {/* BAŞLIK + ID ARAMA */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mesajlarım</Text>
@@ -240,7 +235,7 @@ export default function MessagesPage() {
                 value={searchId}
                 onChangeText={setSearchId}
                 placeholder="ID (VB-1)"
-                placeholderTextColor="#aaa"
+                placeholderTextColor="#666"
                 style={styles.searchInput}
               />
 
@@ -275,22 +270,16 @@ export default function MessagesPage() {
             style={styles.msgItem}
             onPress={() => router.push(`/messages/${m.otherId}`)}
           >
-            {/* AVATAR */}
             <View>
-              <Image
-                source={{ uri: m.otherAvatar }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: m.otherAvatar }} style={styles.avatar} />
               {m.otherOnline && <View style={styles.onlineDot} />}
             </View>
 
-            {/* İSİM + LAST MSG */}
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{m.otherName}</Text>
               <Text style={styles.lastMsg}>{m.lastMsg}</Text>
             </View>
 
-            {/* UNREAD */}
             {m.unread > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadText}>{m.unread}</Text>
@@ -306,92 +295,94 @@ export default function MessagesPage() {
         )}
       </ScrollView>
 
-      {/* ID SEARCH POPUP */}
       {searchUser && (
-        <IdProfilePopup
-          user={searchUser}
-          onClose={() => setSearchUser(null)}
-        />
+        <IdProfilePopup user={searchUser} onClose={() => setSearchUser(null)} />
       )}
     </View>
   );
 }
 
 /* ======================================================
-                     STYLESHEET
+                     STYLESHEET — BEYAZ TEMA
 ====================================================== */
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
   },
+
   header: {
     marginTop: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+
   headerTitle: {
-    color: "#fff",
+    color: "#111",
     fontSize: 22,
     fontWeight: "700",
   },
 
   searchBox: { flexDirection: "row", alignItems: "center" },
+
   searchInputWrap: {
     flexDirection: "row",
-    backgroundColor: "#111",
+    backgroundColor: "#f1f1f1",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#ccc",
     paddingHorizontal: 10,
     borderRadius: 20,
     alignItems: "center",
     height: 36,
     marginRight: 6,
   },
+
   searchInput: {
-    color: "#fff",
+    color: "#111",
     width: 80,
     marginRight: 6,
   },
+
   searchBtn: {
     backgroundColor: "#2563eb",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
-  searchBtnText: { color: "white", fontSize: 12 },
+  searchBtnText: { color: "#fff", fontSize: 12 },
 
   searchToggle: {
     width: 32,
     height: 32,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: "#ccc",
     alignItems: "center",
     justifyContent: "center",
   },
 
   searchError: {
-    color: "#f44",
+    color: "#d00",
     marginTop: 6,
     marginLeft: 4,
   },
 
   msgItem: {
-    backgroundColor: "#111",
+    backgroundColor: "#f6f6f6",
     padding: 12,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.08)",
   },
 
   avatar: { width: 54, height: 54, borderRadius: 999 },
+
   onlineDot: {
     width: 12,
     height: 12,
@@ -401,16 +392,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: "#111",
+    borderColor: "#f6f6f6",
   },
 
   name: {
     fontSize: 18,
-    color: "white",
+    color: "#111",
     fontWeight: "600",
   },
   lastMsg: {
-    color: "rgba(255,255,255,0.6)",
+    color: "#666",
     marginTop: 2,
   },
 
@@ -423,6 +414,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
   },
+
   unreadText: {
     color: "white",
     fontSize: 12,
@@ -431,43 +423,46 @@ const styles = StyleSheet.create({
 
   arrow: {
     marginLeft: 6,
-    color: "rgba(255,255,255,0.4)",
+    color: "#777",
   },
 
   empty: {
-    color: "rgba(255,255,255,0.5)",
+    color: "#777",
     textAlign: "center",
     marginTop: 40,
   },
 
   popupBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.3)",
     justifyContent: "center",
     alignItems: "center",
   },
 
   popupCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#fff",
     width: 280,
     padding: 20,
     borderRadius: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "#ccc",
   },
+
   popupAvatar: {
     width: 90,
     height: 90,
     borderRadius: 999,
     marginBottom: 10,
   },
+
   popupId: {
-    color: "#fff",
+    color: "#444",
     fontSize: 14,
     marginBottom: 4,
   },
-  popupName: { color: "#fff", fontSize: 20, marginBottom: 14 },
+
+  popupName: { color: "#111", fontSize: 20, marginBottom: 14 },
 
   popupBtn: {
     backgroundColor: "#2563eb",
@@ -476,6 +471,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+
   popupBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
 
   popupCloseBtn: {
@@ -484,5 +480,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
   },
+
   popupCloseText: { color: "#fff", textAlign: "center" },
 });

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Pressable } from "react-native";
 import { Audio } from "expo-av";
+import React, { useState } from "react";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function VoicePreviewModal({ data, onCancel, onSend }) {
   const [sound, setSound] = useState<any>(null);
@@ -40,14 +40,14 @@ export default function VoicePreviewModal({ data, onCancel, onSend }) {
 
         {/* ▶️ Dinle */}
         <TouchableOpacity onPress={togglePlay} style={styles.btn}>
-          <Text style={{ color: "#4ade80", fontSize: 16 }}>
+          <Text style={{ color: "#2563eb", fontSize: 16 }}>
             {isPlaying ? "⏹ Durdur" : "▶️ Dinle"}
           </Text>
         </TouchableOpacity>
 
         {/* ❌ İptal */}
         <TouchableOpacity onPress={onCancel} style={styles.btn}>
-          <Text style={{ color: "#f87171", fontSize: 16 }}>İptal</Text>
+          <Text style={{ color: "#dc2626", fontSize: 16 }}>İptal</Text>
         </TouchableOpacity>
 
         {/* ✔ Gönder */}
@@ -67,13 +67,12 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: -55,
 
-    // 🔥 Popup HER ŞEYİN ÜSTÜNDE
     zIndex: 9999,
     elevation: 9999,
 
-    backgroundColor: "rgba(0,0,0,0.30)", // hafif blur/karartma
-    justifyContent: "flex-end", // popup en altta
-    paddingBottom: 65, // input barın ÜSTÜNE denk gelir
+    backgroundColor: "rgba(0,0,0,0.15)", // beyaz tema için daha hafif blur
+    justifyContent: "flex-end",
+    paddingBottom: 65,
   },
 
   popup: {
@@ -84,13 +83,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
 
-    backgroundColor: "rgba(0,0,0,0.85)",
+    backgroundColor: "#fff",            // ⭐ BEYAZ POPUP
     borderTopWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(0,0,0,0.10)",    // ⭐ Gri border
   },
 
   duration: {
-    color: "#fff",
+    color: "#111",                      // ⭐ Koyu yazı
     fontSize: 18,
     fontWeight: "700",
     marginRight: 8,
@@ -99,14 +98,14 @@ const styles = StyleSheet.create({
   btn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#222",
+    backgroundColor: "#e5e7eb",         // ⭐ Açık gri buton
     borderRadius: 8,
   },
 
   btnSend: {
     paddingVertical: 6,
     paddingHorizontal: 14,
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2563eb",         // ⭐ Mavi güçlü buton
     borderRadius: 8,
   },
 });

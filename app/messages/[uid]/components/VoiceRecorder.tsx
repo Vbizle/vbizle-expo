@@ -17,8 +17,6 @@ export default function VoiceRecorder({ onFinish, onError }) {
 
   async function startRecording() {
     try {
-      console.log("🎤 START RECORDING");
-
       await Audio.requestPermissionsAsync();
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: true,
@@ -33,20 +31,16 @@ export default function VoiceRecorder({ onFinish, onError }) {
       setRecording(true);
       setSeconds(0);
 
-      // saniye sayacı
       intervalRef.current = setInterval(() => {
         setSeconds((v) => v + 1);
       }, 1000);
     } catch (e) {
-      console.log("Start error:", e);
       onError?.(e);
     }
   }
 
   async function stopRecording() {
     try {
-      console.log("🎤 STOP RECORDING");
-
       clearInterval(intervalRef.current);
 
       const rec = recRef.current;
@@ -66,12 +60,8 @@ export default function VoiceRecorder({ onFinish, onError }) {
       setRecording(false);
       recRef.current = null;
 
-      if (uri) {
-        console.log("🎤 FINISHED:", uri, duration);
-        onFinish?.({ uri, duration });
-      }
+      if (uri) onFinish?.({ uri, duration });
     } catch (e) {
-      console.log("Stop error:", e);
       onError?.(e);
     }
   }
@@ -87,15 +77,17 @@ export default function VoiceRecorder({ onFinish, onError }) {
       style={{
         width: 38,
         height: 38,
-        backgroundColor: recording ? "#b91c1c" : "#222",
+        backgroundColor: recording ? "#dc2626" : "#fff", // ⭐ Beyaz tema
         borderRadius: 50,
         justifyContent: "center",
         alignItems: "center",
+        borderWidth: recording ? 0 : 1,
+        borderColor: "#ddd", // ⭐ Gri ince border
         position: "relative",
       }}
     >
       {/* 🎤 / ⏹ ikon */}
-      <Text style={{ color: "#fff", fontSize: 20 }}>
+      <Text style={{ color: recording ? "#fff" : "#111", fontSize: 20 }}>
         {recording ? "⏹" : "🎤"}
       </Text>
 
@@ -105,7 +97,7 @@ export default function VoiceRecorder({ onFinish, onError }) {
           style={{
             position: "absolute",
             top: -20,
-            color: "#f87171",
+            color: "#b91c1c", // Koyu kırmızı (beyaz temada okunaklı)
             fontSize: 12,
             fontWeight: "600",
           }}
