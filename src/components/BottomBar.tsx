@@ -1,13 +1,13 @@
+import { usePathname, useRouter } from "expo-router";
+import { collectionGroup, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
+  View,
 } from "react-native";
-import { usePathname, useRouter } from "expo-router";
-import { db, auth } from "../../firebase/firebaseConfig";
-import { collectionGroup, onSnapshot } from "firebase/firestore";
+import { auth, db } from "../../firebase/firebaseConfig";
 
 // ⭐ SAFE AREA
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function BottomBar() {
   const path = usePathname();
   const router = useRouter();
-  const insets = useSafeAreaInsets(); // ← EN ÖNEMLİ EKLEME
+  const insets = useSafeAreaInsets();
 
   const [unread, setUnread] = useState(0);
 
@@ -47,8 +47,8 @@ export default function BottomBar() {
       style={[
         styles.container,
         {
-          paddingBottom: insets.bottom,         // ⭐ Navigation bar üstüne oturtur
-          height: 65 + insets.bottom,           // ⭐ Alt barın ezilmesini engeller
+          paddingBottom: insets.bottom,
+          height: 65 + insets.bottom,
         },
       ]}
     >
@@ -113,9 +113,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     paddingTop: 10,
-    backgroundColor: "#111",
+
+    // ⭐ BEYAZ ALT BAR
+    backgroundColor: "#ffffff",
+
+    // ⭐ İnce gri çizgi
     borderTopWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.08)",
+
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
@@ -127,33 +132,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  // ⭐ Gri ikonlar
   icon: {
     fontSize: 22,
-    color: "gray",
+    color: "#7e7e7e",
     marginBottom: 2,
   },
 
+  // ⭐ Gri yazılar
   label: {
     fontSize: 12,
-    color: "gray",
+    color: "#7e7e7e",
   },
 
+  // ⭐ Aktif (mavi)
   active: {
-    color: "#3b82f6",
+    color: "#2563eb",
+    fontWeight: "600",
   },
 
+  // ⭐ Bildirim Badge
   badge: {
     position: "absolute",
     top: -4,
     right: -10,
-    backgroundColor: "red",
+    backgroundColor: "#ef4444",
     borderRadius: 20,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
 
   badgeText: {
-    color: "white",
+    color: "#ffffff",
     fontSize: 10,
     fontWeight: "bold",
   },
