@@ -15,7 +15,7 @@ const DEFAULT_THEME: ThemeName = "light";
 
 type ThemeContextValue = {
   theme: ThemeName;
-  colors: typeof themeColorsByName["dark"];
+  colors: typeof themeColorsByName[keyof typeof themeColorsByName];
   setTheme: (name: ThemeName) => void;
   toggleTheme: () => void;
 };
