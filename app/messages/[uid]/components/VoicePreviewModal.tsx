@@ -70,7 +70,9 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     elevation: 9999,
 
-    backgroundColor: "rgba(0,0,0,0.15)", // beyaz tema için daha hafif blur
+    // ⭐ Daha mat, premium blur hissi
+    backgroundColor: "rgba(0,0,0,0.10)",
+
     justifyContent: "flex-end",
     paddingBottom: 65,
   },
@@ -83,13 +85,15 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 12,
 
-    backgroundColor: "#fff",            // ⭐ BEYAZ POPUP
+    // ⭐ Mat beyaz light tema
+    backgroundColor: "#F7F7F9",
+
     borderTopWidth: 1,
-    borderColor: "rgba(0,0,0,0.10)",    // ⭐ Gri border
+    borderColor: "rgba(0,0,0,0.08)",
   },
 
   duration: {
-    color: "#111",                      // ⭐ Koyu yazı
+    color: "#1C1C1E", // ⭐ Premium koyu gri
     fontSize: 18,
     fontWeight: "700",
     marginRight: 8,
@@ -98,14 +102,14 @@ const styles = StyleSheet.create({
   btn: {
     paddingVertical: 6,
     paddingHorizontal: 12,
-    backgroundColor: "#e5e7eb",         // ⭐ Açık gri buton
+    backgroundColor: "#E2E3E7", // ⭐ Soft light gri
     borderRadius: 8,
   },
 
   btnSend: {
     paddingVertical: 6,
     paddingHorizontal: 14,
-    backgroundColor: "#2563eb",         // ⭐ Mavi güçlü buton
+    backgroundColor: "#2563eb", // ⭐ Mavi güçlü CTA
     borderRadius: 8,
   },
 });

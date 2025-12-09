@@ -16,7 +16,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-
 import { auth, db, storage } from "@/firebase/firebaseConfig";
 import {
   addDoc,
@@ -41,11 +40,8 @@ import DmUserStatusHeader from "./components/DmUserStatusHeader";
 import VoiceRecorder from "./components/VoiceRecorder";
 import { uploadVoice } from "./utils/uploadVoice";
 
-// ⭐ YENİ POPUP IMPORT
-import VoicePreviewModal from "./components/VoicePreviewModal";
-
-// ⭐ YENİ SES BUBBLE IMPORT
 import VoiceMessageBubble from "./components/VoiceMessageBubble";
+import VoicePreviewModal from "./components/VoicePreviewModal";
 
 export default function DirectMessagePage() {
   const router = useRouter();
@@ -62,7 +58,6 @@ export default function DirectMessagePage() {
 
   const scrollRef = useRef<ScrollView>(null);
 
-  // 🎤 POPUP STATE
   const [recordingPopup, setRecordingPopup] = useState<any>(null);
 
   const [pendingImage, setPendingImage] = useState<string | null>(null);
@@ -133,10 +128,7 @@ export default function DirectMessagePage() {
   useEffect(() => {
     if (!convId) return;
 
-    const qRef = query(
-      collection(db, "dm", convId, "messages"),
-      orderBy("time")
-    );
+    const qRef = query(collection(db, "dm", convId, "messages"), orderBy("time"));
 
     const unsub = onSnapshot(qRef, (snap) => {
       const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -309,7 +301,7 @@ export default function DirectMessagePage() {
   if (!me || !otherUser) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={{ color: "#fff" }}>Yükleniyor...</Text>
+        <Text style={{ color: "#1C1C1E" }}>Yükleniyor...</Text>
       </SafeAreaView>
     );
   }
@@ -323,7 +315,7 @@ export default function DirectMessagePage() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <StatusBar backgroundColor="#F2F2F5" barStyle="dark-content" />
 
         <DmUserStatusHeader
           styles={styles}
@@ -336,7 +328,7 @@ export default function DirectMessagePage() {
           setMetaSeen={setMetaSeen}
         />
 
-        {/* ⭐ POPUP */}
+        {/* SES ÖNİZLEME */}
         <VoicePreviewModal
           data={recordingPopup}
           onCancel={() => setRecordingPopup(null)}
@@ -356,34 +348,23 @@ export default function DirectMessagePage() {
               <View style={{ flexDirection: "row", marginTop: 20 }}>
                 <TouchableOpacity
                   onPress={() => setPendingImage(null)}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 20,
-                    backgroundColor: "#333",
-                    borderRadius: 10,
-                    marginRight: 10,
-                  }}
+                  style={styles.cancelBtn}
                 >
-                  <Text style={{ color: "#fff", fontSize: 15 }}>İptal</Text>
+                  <Text style={styles.cancelText}>İptal</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   onPress={uploadPendingImage}
-                  style={{
-                    paddingVertical: 10,
-                    paddingHorizontal: 20,
-                    backgroundColor: "#2563eb",
-                    borderRadius: 10,
-                  }}
+                  style={styles.sendImgBtn}
                 >
-                  <Text style={{ color: "#fff", fontSize: 15 }}>Gönder</Text>
+                  <Text style={styles.sendImgText}>Gönder</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
         )}
 
-        {/* FOTOĞRAF TAM EKRAN */}
+        {/* FOTO TAM EKRAN */}
         {imageModal && (
           <Modal visible transparent animationType="fade">
             <TouchableOpacity
@@ -421,19 +402,17 @@ export default function DirectMessagePage() {
               !!msgTime &&
               msgTime <= lastSeenTime;
 
-            // ⭐ SES MESAJI → VoiceMessageBubble'a taşındı
             if (m.voiceUrl)
-           return (
-           <VoiceMessageBubble
-          key={m.id}
-          m={m}
-          mine={mine}
-         isSeen={isSeen}
-         isLastMyMessage={m.id === lastMyMessageId}
-          />
-        );
+              return (
+                <VoiceMessageBubble
+                  key={m.id}
+                  m={m}
+                  mine={mine}
+                  isSeen={isSeen}
+                  isLastMyMessage={m.id === lastMyMessageId}
+                />
+              );
 
-            // FOTOĞRAF
             if (m.imgUrl)
               return (
                 <View key={m.id} style={{ marginBottom: 8 }}>
@@ -446,21 +425,11 @@ export default function DirectMessagePage() {
                   </TouchableOpacity>
 
                   {mine && m.id === lastMyMessageId && (
-                    <Text
-                      style={{
-                        color: "#777",
-                        fontSize: 11,
-                        marginLeft: "auto",
-                        marginRight: 4,
-                      }}
-                    >
-                      {isSeen ? "Görüldü" : ""}
-                    </Text>
+                    <Text style={styles.seenText}>{isSeen ? "Görüldü" : ""}</Text>
                   )}
                 </View>
               );
 
-            // METİN MESAJI
             return (
               <View key={m.id} style={{ marginBottom: 8 }}>
                 <TouchableOpacity
@@ -474,16 +443,7 @@ export default function DirectMessagePage() {
                 </TouchableOpacity>
 
                 {mine && m.id === lastMyMessageId && (
-                  <Text
-                    style={{
-                      color: "#777",
-                      fontSize: 11,
-                      marginLeft: "auto",
-                      marginRight: 4,
-                    }}
-                  >
-                    {isSeen ? "Görüldü" : ""}
-                  </Text>
+                  <Text style={styles.seenText}>{isSeen ? "Görüldü" : ""}</Text>
                 )}
               </View>
             );
@@ -497,7 +457,7 @@ export default function DirectMessagePage() {
               onPress={() => setMenuOpen(!menuOpen)}
               style={styles.hamburgerBtn}
             >
-              <Text style={{ color: "#fff", fontSize: 22 }}>☰</Text>
+              <Text style={{ color: "#1C1C1E", fontSize: 22 }}>☰</Text>
             </TouchableOpacity>
 
             {menuOpen && (
@@ -519,7 +479,7 @@ export default function DirectMessagePage() {
               handleTyping();
             }}
             placeholder="Mesaj yaz..."
-            placeholderTextColor="#888"
+            placeholderTextColor="#9A9A9E"
           />
 
           <TouchableOpacity onPress={sendMessage} style={styles.sendBtn}>
@@ -532,13 +492,15 @@ export default function DirectMessagePage() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: "#F2F2F5" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000",
+    backgroundColor: "#F2F2F5",
   },
+
+  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -547,9 +509,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
     borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.06)",
   },
-  backBtn: { fontSize: 24, color: "#fff" },
+  backBtn: { fontSize: 24, color: "#1C1C1E" },
   avatar: { width: 45, height: 45, borderRadius: 999 },
   onlineDot: {
     position: "absolute",
@@ -560,52 +522,56 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#22c55e",
     borderWidth: 2,
-    borderColor: "#000",
+    borderColor: "#FFFFFF",
   },
-  name: { fontSize: 18, color: "#fff", fontWeight: "600" },
-  onlineText: { fontSize: 12, color: "#22c55e" },
-  typing: { fontSize: 12, color: "#3b82f6" },
+  name: { fontSize: 18, color: "#1C1C1E", fontWeight: "600" },
+  onlineText: { fontSize: 12, color: "#16A34A" },
+  typing: { fontSize: 12, color: "#2563EB" },
+
   msgList: { padding: 10, paddingBottom: 2 },
 
+  /* MESAJ BALONLARI */
   bubble: {
     padding: 10,
     borderRadius: 12,
     maxWidth: "75%",
     marginBottom: 3,
   },
-  bubbleText: { color: "#fff" },
+  bubbleText: { color: "#1C1C1E" },
 
   myBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#88b4dd67",
     borderBottomRightRadius: 0,
   },
   otherBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#222",
+    backgroundColor: "#E8E8EB",
     borderBottomLeftRadius: 0,
   },
 
+  /* RESİM */
   imgBubble: { marginBottom: 10 },
   msgImg: {
     width: 200,
     height: 200,
     borderRadius: 12,
   },
-
   right: { alignSelf: "flex-end" },
   left: { alignSelf: "flex-start" },
 
-  voiceBubble: {
-    padding: 10,
-    backgroundColor: "#333",
-    borderRadius: 10,
-    marginVertical: 5,
+  /* SEEN */
+  seenText: {
+    color: "#6E6E73",
+    fontSize: 11,
+    marginLeft: "auto",
+    marginRight: 4,
   },
 
+  /* MODAL */
   modalBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 50,
@@ -613,6 +579,24 @@ const styles = StyleSheet.create({
   },
   modalImg: { width: "90%", height: "90%" },
 
+  cancelBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#E5E5EA",
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  cancelText: { color: "#1C1C1E", fontSize: 15 },
+
+  sendImgBtn: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: "#2563eb",
+    borderRadius: 10,
+  },
+  sendImgText: { color: "#fff", fontSize: 15 },
+
+  /* GÖNDERME BARI */
   sendBar: {
     position: "absolute",
     bottom: 0,
@@ -622,18 +606,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: "transparent",
+    backgroundColor: "#F2F2F5",
     alignItems: "center",
   },
 
   input: {
     flex: 1,
     height: 36,
-    backgroundColor: "#222",
+    backgroundColor: "#FAFAFC",
     borderRadius: 12,
     paddingHorizontal: 10,
     marginHorizontal: 1,
-    color: "#fff",
+    color: "#1C1C1E",
   },
 
   sendBtn: {
@@ -653,7 +637,7 @@ const styles = StyleSheet.create({
   hamburgerBtn: {
     width: 42,
     height: 32,
-    backgroundColor: "#222",
+    backgroundColor: "#FAFAFC",
     borderRadius: 75,
     justifyContent: "center",
     alignItems: "center",
@@ -663,12 +647,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 50,
     left: 0,
-    backgroundColor: "#222",
+    backgroundColor: "#FFFFFF",
     padding: 8,
     borderRadius: 10,
     width: 150,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.06)",
     zIndex: 9999,
   },
 
@@ -678,7 +662,7 @@ const styles = StyleSheet.create({
   },
 
   popupText: {
-    color: "#fff",
+    color: "#1C1C1E",
     fontSize: 15,
   },
 });

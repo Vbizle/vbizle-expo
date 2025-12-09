@@ -33,7 +33,6 @@ export default function VoiceRecorder({ onFinish, onError }) {
       setRecording(true);
       setSeconds(0);
 
-      // saniye sayacı
       intervalRef.current = setInterval(() => {
         setSeconds((v) => v + 1);
       }, 1000);
@@ -87,7 +86,10 @@ export default function VoiceRecorder({ onFinish, onError }) {
       style={{
         width: 38,
         height: 38,
-        backgroundColor: recording ? "#b91c1c" : "#222",
+
+        // ⭐ Mat beyaz temaya uygun premium tonlar
+        backgroundColor: recording ? "#D7263D" : "#E5E5EA",
+
         borderRadius: 50,
         justifyContent: "center",
         alignItems: "center",
@@ -95,17 +97,25 @@ export default function VoiceRecorder({ onFinish, onError }) {
       }}
     >
       {/* 🎤 / ⏹ ikon */}
-      <Text style={{ color: "#fff", fontSize: 20 }}>
+      <Text
+        style={{
+          color: recording ? "#fff" : "#1C1C1E",   // ⭐ Light mode uyumlu ikon renkleri
+          fontSize: 20,
+        }}
+      >
         {recording ? "⏹" : "🎤"}
       </Text>
 
-      {/* ⏱ Kayıt süresi */}
+      {/* ⏱ Süre */}
       {recording && (
         <Text
           style={{
             position: "absolute",
             top: -20,
-            color: "#f87171",
+
+            // ⭐ Daha soft premium kırmızı
+            color: "#C83B3B",
+
             fontSize: 12,
             fontWeight: "600",
           }}

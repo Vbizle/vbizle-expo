@@ -9,7 +9,6 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
   async function togglePlay() {
     try {
       if (!playing) {
-        // ▶️ PLAY
         const { sound } = await Audio.Sound.createAsync(
           { uri: m.voiceUrl },
           { shouldPlay: true }
@@ -24,7 +23,6 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
           }
         });
       } else {
-        // ⏸ DURDUR
         if (soundObj) {
           await soundObj.stopAsync();
           await soundObj.unloadAsync();
@@ -40,7 +38,10 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
     <View
       style={{
         alignSelf: mine ? "flex-end" : "flex-start",
-        backgroundColor: mine ? "#2563eb" : "#222",
+
+        // 💠 MAT BEYAZ TEMA — BALONLAR
+        backgroundColor: mine ? "#2563eb" : "#E8E8EB",
+
         paddingVertical: 0,
         paddingHorizontal: 9,
         borderRadius: 50,
@@ -49,7 +50,6 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
 
         flexDirection: "row",
         alignItems: "center",
-
         position: "relative",
       }}
     >
@@ -62,35 +62,43 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
           borderRadius: 20,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: mine ? "#1e40af" : "#333",
+
+          // 💠 LIGHT MODE UYUMLU BUTTON BACKGROUND
+          backgroundColor: mine ? "#1e40af" : "#D0D0D5",
+
           marginRight: 10,
         }}
       >
-        <Text style={{ color: "#fff", fontSize: 18 }}>
+        <Text
+          style={{
+            color: mine ? "#fff" : "#1C1C1E",
+            fontSize: 18,
+          }}
+        >
           {playing ? "⏸" : "▶️"}
         </Text>
       </TouchableOpacity>
 
-      {/* ⏱️ SÜRE (TAŞMAYAN HALİ) */}
+      {/* SÜRE */}
       <Text
         style={{
-          color: "#fff",
+          color: mine ? "#fff" : "#1C1C1E",
           fontSize: 16,
-          marginRight: 8, // 🔥 taşmayı önler
+          marginRight: 8,
         }}
       >
         {m.duration}s
       </Text>
 
-      {/* ✔ SADECE SON KENDİ MESAJINDA VE GÖRÜLDÜ İSE */}
+      {/* ✔ GÖRÜLDÜ */}
       {mine && isLastMyMessage && isSeen && (
         <Text
           style={{
-            color: "#ddd",
+            color: "#6E6E73",
             fontSize: 10,
             position: "absolute",
             right: 6,
-            bottom: -12, // 🔥 artık mavi balonun altına taşmadan oturur
+            bottom: -12,
           }}
         >
           Görüldü

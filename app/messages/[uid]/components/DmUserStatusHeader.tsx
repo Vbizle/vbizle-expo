@@ -45,7 +45,7 @@ export default function DmUserStatusHeader({
     return () => unsub();
   }, [convId]);
 
-  // 🔥 DM ekranına girince SON MESAJ timestamp'ini OKUNDU olarak kaydet
+  // 🔥 DM ekranına girince SON MESAJ OKUNDU olarak kaydet
   useEffect(() => {
     if (!convId || !me?.uid || messages.length === 0) return;
 
@@ -61,7 +61,7 @@ export default function DmUserStatusHeader({
     });
   }, [messages.length, convId, me?.uid]);
 
-  // 🔥 SON GÖRÜLME BİLGİSİ (offline kullanıcı için)
+  // 🔥 SON GÖRÜLME (offline kullanıcı için)
   const lastSeenText =
     !otherUser.online && otherUser.lastSeen
       ? formatLastSeen(
@@ -74,22 +74,27 @@ export default function DmUserStatusHeader({
   return (
     <View style={styles.header}>
       <TouchableOpacity onPress={() => router.back()}>
-        <Text style={styles.backBtn}>←</Text>
+        <Text style={[styles.backBtn, { color: "#1C1C1E" }]}>←</Text>
       </TouchableOpacity>
 
       <View style={{ position: "relative" }}>
         {otherUser.avatar ? (
           <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatar, { backgroundColor: "#222" }]} />
+          <View
+            style={[
+              styles.avatar,
+              { backgroundColor: "#E8E8EB" } // 💠 DARK MODE'DAKİ #222 → MAT BEYAZ UYUMLU
+            ]}
+          />
         )}
+
         {otherUser.online && <View style={styles.onlineDot} />}
       </View>
 
       <View>
         <Text style={styles.name}>{otherUser.name}</Text>
 
-        {/* 🔥 Durum metni */}
         <Text
           style={
             otherTyping
