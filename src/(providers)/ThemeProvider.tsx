@@ -11,8 +11,6 @@ import React, {
     useState,
 } from "react";
 
-// 🔧 Başlangıçta hangi tema aktif olsun?
-// Şu an komple siyah tema kullanıyoruz:
 const DEFAULT_THEME: ThemeName = "light";
 
 type ThemeContextValue = {
@@ -50,7 +48,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Ekranlarda kullanacağımız hook
+// Hook
 export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
@@ -58,3 +56,6 @@ export function useTheme() {
   }
   return ctx;
 }
+
+// ⭐ Eksik olan buydu — Default export!
+export default ThemeProvider;

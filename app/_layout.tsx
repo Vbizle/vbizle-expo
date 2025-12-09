@@ -8,17 +8,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
+// ⭐ DOĞRU PROVIDER PATH'LERİ
 import AuthProvider from "@/src/(providers)/AuthProvider";
 import { RoomProvider } from "@/src/(providers)/RoomProvider";
+import ThemeProvider from "@/src/(providers)/ThemeProvider";
 import { UiProvider } from "@/src/(providers)/UiProvider";
 
 import BottomBar from "@/src/components/BottomBar";
 import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 
 import { usePresence } from "@/src/(hooks)/usePresence";
-
-// ⭐ YENİ — THEME PROVIDER IMPORT
-import ThemeProvider from "@/src/(providers)/ThemeProvider";
 
 export default function Layout() {
   const router = useRouter();
@@ -49,29 +48,17 @@ export default function Layout() {
     currentRoute.startsWith("/messages/") &&
     currentRoute.split("/").length === 3;
 
-  useEffect(() => {
-    if (!loading && user === null && !isAuthPage) {
-      router.replace("/login");
-    }
-  }, [loading, user, currentRoute]);
-
-  useEffect(() => {
-    if (!loading && user && isAuthPage) {
-      router.replace("/");
-    }
-  }, [loading, user, currentRoute]);
-
   if (loading) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: "black",
+          backgroundColor: "#fff",
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={{ color: "white", opacity: 0.6, fontSize: 18 }}>
+        <Text style={{ color: "#111827", opacity: 0.6, fontSize: 18 }}>
           Yükleniyor...
         </Text>
       </View>
@@ -79,17 +66,18 @@ export default function Layout() {
   }
 
   return (
-    // ⭐ THEME PROVIDER ARTIK EN DIŞTA
     <ThemeProvider>
       <UiProvider>
         <AuthProvider>
           <RoomProvider>
 
+            {/* ⭐ SAFE AREA: Beyaz tema */}
             <SafeAreaView
-              style={{ flex: 1, backgroundColor: "black" }}
+              style={{ flex: 1, backgroundColor: "#fff" }}
               edges={["left", "right", "bottom"]}
             >
-              <StatusBar backgroundColor="#000" barStyle="light-content" />
+              {/* ⭐ STATUS BAR — açık tema */}
+              <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
               {/* HEADER */}
               {user && !isRoomPage && !isDMPage && !isAuthPage && (
@@ -100,33 +88,40 @@ export default function Layout() {
                     paddingBottom: 12,
                     paddingHorizontal: 16,
                     borderBottomWidth: 1,
-                    borderColor: "rgba(255,255,255,0.1)",
+                    borderColor: "rgba(0,0,0,0.08)",
                     flexDirection: "row",
                     justifyContent: "space-between",
+                    backgroundColor: "#fff",
                   }}
                 >
                   <Text
                     style={{
                       fontSize: 24,
                       fontWeight: "bold",
-                      color: "white",
+                      color: "#111827",
                     }}
                   >
                     Vbizle
                   </Text>
 
                   <View style={{ flexDirection: "row", gap: 20 }}>
-                    <Text style={{ color: "white" }} onPress={() => router.push("/")}>
+                    <Text
+                      style={{ color: "#111827" }}
+                      onPress={() => router.push("/")}
+                    >
                       Ana Sayfa
                     </Text>
-                    <Text style={{ color: "white" }} onPress={() => router.push("/rooms")}>
+                    <Text
+                      style={{ color: "#111827" }}
+                      onPress={() => router.push("/rooms")}
+                    >
                       Odalar
                     </Text>
                   </View>
                 </View>
               )}
 
-              <View style={{ flex: 1 }}>
+              <View style={{ flex: 1, backgroundColor: "#fff" }}>
                 <Slot />
               </View>
 

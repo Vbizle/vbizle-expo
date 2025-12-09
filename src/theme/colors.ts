@@ -1,8 +1,6 @@
 // src/theme/colors.ts
 
-// Uygulamanın ana renk token'ları
-// Şu an koyu tema için ayarlı, açık tema için de hazır.
-
+// 💠 DARK THEME (Koyu)
 export const darkColors = {
   background: "#000000",
   backgroundSoft: "#050505",
@@ -20,6 +18,7 @@ export const darkColors = {
   bubbleOther: "#1F2933",
 };
 
+// 💠 LIGHT THEME (Açık)
 export const lightColors = {
   background: "#FFFFFF",
   backgroundSoft: "#F3F4F6",
@@ -39,7 +38,12 @@ export const lightColors = {
 
 export type ThemeName = "dark" | "light";
 
-export const themeColorsByName: Record<ThemeName, typeof darkColors> = {
+// ❗ Burada tip hatasını çözüyoruz: darkColors'a sabitlemiyoruz.
+// İki tema nesnesinin birleşimini otomatik türetiyoruz.
+export type ThemeColors = typeof darkColors & typeof lightColors;
+
+// ✔ Tam güvenli tema eşlemesi
+export const themeColorsByName: Record<ThemeName, ThemeColors> = {
   dark: darkColors,
   light: lightColors,
 };
