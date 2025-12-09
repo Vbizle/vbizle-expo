@@ -44,7 +44,7 @@ import { uploadVoice } from "./utils/uploadVoice";
 // ⭐ YENİ POPUP IMPORT
 import VoicePreviewModal from "./components/VoicePreviewModal";
 
-// ⭐ SES BUBBLE IMPORT
+// ⭐ YENİ SES BUBBLE IMPORT
 import VoiceMessageBubble from "./components/VoiceMessageBubble";
 
 export default function DirectMessagePage() {
@@ -309,13 +309,12 @@ export default function DirectMessagePage() {
   if (!me || !otherUser) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={{ color: "#444" }}>Yükleniyor...</Text>
+        <Text style={{ color: "#fff" }}>Yükleniyor...</Text>
       </SafeAreaView>
     );
   }
 
-  const lastMyMessageId =
-    messages.filter((msg) => msg.uid === me.uid).at(-1)?.id;
+  const lastMyMessageId = messages.filter((msg) => msg.uid === me.uid).at(-1)?.id;
 
   return (
     <KeyboardAvoidingView
@@ -324,7 +323,7 @@ export default function DirectMessagePage() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+        <StatusBar backgroundColor="#000" barStyle="light-content" />
 
         <DmUserStatusHeader
           styles={styles}
@@ -360,12 +359,12 @@ export default function DirectMessagePage() {
                   style={{
                     paddingVertical: 10,
                     paddingHorizontal: 20,
-                    backgroundColor: "#ddd",
+                    backgroundColor: "#333",
                     borderRadius: 10,
                     marginRight: 10,
                   }}
                 >
-                  <Text style={{ color: "#333", fontSize: 15 }}>İptal</Text>
+                  <Text style={{ color: "#fff", fontSize: 15 }}>İptal</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -422,29 +421,26 @@ export default function DirectMessagePage() {
               !!msgTime &&
               msgTime <= lastSeenTime;
 
-            // ⭐ SES MESAJI → VoiceMessageBubble
+            // ⭐ SES MESAJI → VoiceMessageBubble'a taşındı
             if (m.voiceUrl)
-              return (
-                <VoiceMessageBubble
-                  key={m.id}
-                  m={m}
-                  mine={mine}
-                  isSeen={isSeen}
-                  isLastMyMessage={m.id === lastMyMessageId}
-                />
-              );
+           return (
+           <VoiceMessageBubble
+          key={m.id}
+          m={m}
+          mine={mine}
+         isSeen={isSeen}
+         isLastMyMessage={m.id === lastMyMessageId}
+          />
+        );
 
-            // ⭐ FOTOĞRAF
+            // FOTOĞRAF
             if (m.imgUrl)
               return (
                 <View key={m.id} style={{ marginBottom: 8 }}>
                   <TouchableOpacity
                     onPress={() => setImageModal(m.imgUrl)}
                     onLongPress={() => mine && deleteMessage(m.id)}
-                    style={[
-                      styles.imgBubble,
-                      mine ? styles.right : styles.left,
-                    ]}
+                    style={[styles.imgBubble, mine ? styles.right : styles.left]}
                   >
                     <Image source={{ uri: m.imgUrl }} style={styles.msgImg} />
                   </TouchableOpacity>
@@ -452,7 +448,7 @@ export default function DirectMessagePage() {
                   {mine && m.id === lastMyMessageId && (
                     <Text
                       style={{
-                        color: "#999",
+                        color: "#777",
                         fontSize: 11,
                         marginLeft: "auto",
                         marginRight: 4,
@@ -464,7 +460,7 @@ export default function DirectMessagePage() {
                 </View>
               );
 
-            // ⭐ METİN MESAJI
+            // METİN MESAJI
             return (
               <View key={m.id} style={{ marginBottom: 8 }}>
                 <TouchableOpacity
@@ -480,7 +476,7 @@ export default function DirectMessagePage() {
                 {mine && m.id === lastMyMessageId && (
                   <Text
                     style={{
-                      color: "#999",
+                      color: "#777",
                       fontSize: 11,
                       marginLeft: "auto",
                       marginRight: 4,
@@ -501,7 +497,7 @@ export default function DirectMessagePage() {
               onPress={() => setMenuOpen(!menuOpen)}
               style={styles.hamburgerBtn}
             >
-              <Text style={{ color: "#444", fontSize: 22 }}>☰</Text>
+              <Text style={{ color: "#fff", fontSize: 22 }}>☰</Text>
             </TouchableOpacity>
 
             {menuOpen && (
@@ -523,7 +519,7 @@ export default function DirectMessagePage() {
               handleTyping();
             }}
             placeholder="Mesaj yaz..."
-            placeholderTextColor="#999"
+            placeholderTextColor="#888"
           />
 
           <TouchableOpacity onPress={sendMessage} style={styles.sendBtn}>
@@ -535,20 +531,14 @@ export default function DirectMessagePage() {
   );
 }
 
-/* ======================================================
-                     STYLES — BEYAZ TEMA
-====================================================== */
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-
+  container: { flex: 1, backgroundColor: "#000" },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "#000",
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -557,14 +547,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
     borderBottomWidth: 1,
-    borderColor: "#e5e5e5",
-    backgroundColor: "#fff",
+    borderColor: "rgba(255,255,255,0.1)",
   },
-
-  backBtn: { fontSize: 24, color: "#333" },
-
+  backBtn: { fontSize: 24, color: "#fff" },
   avatar: { width: 45, height: 45, borderRadius: 999 },
-
   onlineDot: {
     position: "absolute",
     bottom: 0,
@@ -574,13 +560,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#22c55e",
     borderWidth: 2,
-    borderColor: "#fff",
+    borderColor: "#000",
   },
-
-  name: { fontSize: 18, color: "#111", fontWeight: "600" },
+  name: { fontSize: 18, color: "#fff", fontWeight: "600" },
   onlineText: { fontSize: 12, color: "#22c55e" },
-  typing: { fontSize: 12, color: "#2563eb" },
-
+  typing: { fontSize: 12, color: "#3b82f6" },
   msgList: { padding: 10, paddingBottom: 2 },
 
   bubble: {
@@ -589,23 +573,20 @@ const styles = StyleSheet.create({
     maxWidth: "75%",
     marginBottom: 3,
   },
-
-  bubbleText: { color: "#000" },
+  bubbleText: { color: "#fff" },
 
   myBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#2074f35b",
+    backgroundColor: "#2563eb",
     borderBottomRightRadius: 0,
   },
-
   otherBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#f1f1f1",
+    backgroundColor: "#222",
     borderBottomLeftRadius: 0,
   },
 
   imgBubble: { marginBottom: 10 },
-
   msgImg: {
     width: 200,
     height: 200,
@@ -615,14 +596,21 @@ const styles = StyleSheet.create({
   right: { alignSelf: "flex-end" },
   left: { alignSelf: "flex-start" },
 
-  modalBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.85)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+  voiceBubble: {
+    padding: 10,
+    backgroundColor: "#333",
+    borderRadius: 10,
+    marginVertical: 5,
   },
 
+  modalBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingTop: 50,
+    paddingBottom: 50,
+  },
   modalImg: { width: "90%", height: "90%" },
 
   sendBar: {
@@ -634,20 +622,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
     alignItems: "center",
-    borderTopWidth: 1,
-    borderColor: "#e5e5e5",
   },
 
   input: {
     flex: 1,
     height: 36,
-    backgroundColor: "#f1f1f1",
+    backgroundColor: "#222",
     borderRadius: 12,
     paddingHorizontal: 10,
     marginHorizontal: 1,
-    color: "#000",
+    color: "#fff",
   },
 
   sendBtn: {
@@ -667,7 +653,7 @@ const styles = StyleSheet.create({
   hamburgerBtn: {
     width: 42,
     height: 32,
-    backgroundColor: "#f1f1f1",
+    backgroundColor: "#222",
     borderRadius: 75,
     justifyContent: "center",
     alignItems: "center",
@@ -677,12 +663,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 50,
     left: 0,
-    backgroundColor: "#fff",
+    backgroundColor: "#222",
     padding: 8,
     borderRadius: 10,
     width: 150,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "rgba(255,255,255,0.1)",
     zIndex: 9999,
   },
 
@@ -692,7 +678,7 @@ const styles = StyleSheet.create({
   },
 
   popupText: {
-    color: "#333",
+    color: "#fff",
     fontSize: 15,
   },
 });

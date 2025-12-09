@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function BottomBar() {
   const path = usePathname();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useSafeAreaInsets(); // ← EN ÖNEMLİ EKLEME
 
   const [unread, setUnread] = useState(0);
 
@@ -47,8 +47,8 @@ export default function BottomBar() {
       style={[
         styles.container,
         {
-          paddingBottom: insets.bottom,
-          height: 65 + insets.bottom,
+          paddingBottom: insets.bottom,         // ⭐ Navigation bar üstüne oturtur
+          height: 65 + insets.bottom,           // ⭐ Alt barın ezilmesini engeller
         },
       ]}
     >
@@ -113,14 +113,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     paddingTop: 10,
-
-    // ⭐ BEYAZ ALT BAR
-    backgroundColor: "#ffffff",
-
-    // ⭐ İnce gri çizgi
+    backgroundColor: "#111",
     borderTopWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-
+    borderColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
@@ -132,38 +127,33 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // ⭐ Gri ikonlar
   icon: {
     fontSize: 22,
-    color: "#7e7e7e",
+    color: "gray",
     marginBottom: 2,
   },
 
-  // ⭐ Gri yazılar
   label: {
     fontSize: 12,
-    color: "#7e7e7e",
+    color: "gray",
   },
 
-  // ⭐ Aktif (mavi)
   active: {
-    color: "#2563eb",
-    fontWeight: "600",
+    color: "#3b82f6",
   },
 
-  // ⭐ Bildirim Badge
   badge: {
     position: "absolute",
     top: -4,
     right: -10,
-    backgroundColor: "#ef4444",
+    backgroundColor: "red",
     borderRadius: 20,
     paddingHorizontal: 6,
     paddingVertical: 1,
   },
 
   badgeText: {
-    color: "#ffffff",
+    color: "white",
     fontSize: 10,
     fontWeight: "bold",
   },

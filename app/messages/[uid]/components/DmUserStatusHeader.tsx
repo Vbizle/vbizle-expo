@@ -1,7 +1,7 @@
-import React, { useEffect } from "react";
-import { View, Text, Image, TouchableOpacity } from "react-native";
-import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
+import React, { useEffect } from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 export default function DmUserStatusHeader({
   styles,
@@ -29,7 +29,7 @@ export default function DmUserStatusHeader({
     return `${diffDay} gün önce aktifti`;
   }
 
-  // 🔥 META dinle
+  // 🔥 META dinle → okundu bilgisini index'e gönder
   useEffect(() => {
     if (!convId) return;
 
@@ -45,7 +45,7 @@ export default function DmUserStatusHeader({
     return () => unsub();
   }, [convId]);
 
-  // 🔥 DM ekranına girince son mesajı "seen" olarak işle
+  // 🔥 DM ekranına girince SON MESAJ timestamp'ini OKUNDU olarak kaydet
   useEffect(() => {
     if (!convId || !me?.uid || messages.length === 0) return;
 
@@ -61,7 +61,7 @@ export default function DmUserStatusHeader({
     });
   }, [messages.length, convId, me?.uid]);
 
-  // 🔥 offline kullanıcı için last seen
+  // 🔥 SON GÖRÜLME BİLGİSİ (offline kullanıcı için)
   const lastSeenText =
     !otherUser.online && otherUser.lastSeen
       ? formatLastSeen(
@@ -72,47 +72,31 @@ export default function DmUserStatusHeader({
       : "";
 
   return (
-    <View style={[styles.header, { backgroundColor: "#fff" }]}>
+    <View style={styles.header}>
       <TouchableOpacity onPress={() => router.back()}>
-        <Text style={[styles.backBtn, { color: "#222" }]}>←</Text>
+        <Text style={styles.backBtn}>←</Text>
       </TouchableOpacity>
 
       <View style={{ position: "relative" }}>
         {otherUser.avatar ? (
           <Image source={{ uri: otherUser.avatar }} style={styles.avatar} />
         ) : (
-          <View
-            style={[
-              styles.avatar,
-              { backgroundColor: "#e5e5e5", borderColor: "#ccc" },
-            ]}
-          />
+          <View style={[styles.avatar, { backgroundColor: "#222" }]} />
         )}
-        {otherUser.online && (
-          <View
-            style={[
-              styles.onlineDot,
-              {
-                backgroundColor: "#22c55e",
-                borderColor: "#fff",
-              },
-            ]}
-          />
-        )}
+        {otherUser.online && <View style={styles.onlineDot} />}
       </View>
 
       <View>
-        <Text style={[styles.name, { color: "#111" }]}>
-          {otherUser.name}
-        </Text>
+        <Text style={styles.name}>{otherUser.name}</Text>
 
+        {/* 🔥 Durum metni */}
         <Text
           style={
             otherTyping
-              ? [styles.typing, { color: "#2563eb" }]
+              ? styles.typing
               : otherUser.online
-              ? [styles.onlineText, { color: "#22c55e" }]
-              : [styles.onlineText, { color: "#666" }]
+              ? styles.onlineText
+              : styles.onlineText
           }
         >
           {otherTyping
