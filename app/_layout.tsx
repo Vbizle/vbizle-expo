@@ -8,20 +8,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
-// ⭐ DOĞRU PROVIDER PATH'LERİ
+// Providers
 import AuthProvider from "@/src/(providers)/AuthProvider";
 import { RoomProvider } from "@/src/(providers)/RoomProvider";
-import ThemeProvider from "@/src/(providers)/ThemeProvider";
+import ThemeProvider, { useTheme } from "@/src/(providers)/ThemeProvider";
 import { UiProvider } from "@/src/(providers)/UiProvider";
 
+// Components
 import BottomBar from "@/src/components/BottomBar";
 import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 
+// Hooks
 import { usePresence } from "@/src/(hooks)/usePresence";
 
-export default function Layout() {
+function LayoutInner() {
   const router = useRouter();
   const segments = useSegments();
+  const { colors } = useTheme();   // ⭐ TÜM RENKLER BURADAN GELECEK
 
   const [user, setUser] = useState<any>(undefined);
   const loading = user === undefined;
@@ -53,12 +56,12 @@ export default function Layout() {
       <View
         style={{
           flex: 1,
-          backgroundColor: "#fff",
+          backgroundColor: colors.background,
           justifyContent: "center",
           alignItems: "center",
         }}
       >
-        <Text style={{ color: "#111827", opacity: 0.6, fontSize: 18 }}>
+        <Text style={{ color: colors.text, opacity: 0.6, fontSize: 18 }}>
           Yükleniyor...
         </Text>
       </View>
@@ -66,72 +69,69 @@ export default function Layout() {
   }
 
   return (
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      edges={["left", "right", "bottom"]}
+    >
+      <StatusBar
+        backgroundColor={colors.background}
+        barStyle={colors.text === "#111827" ? "dark-content" : "light-content"}
+      />
+
+      {/* HEADER */}
+      {user && !isRoomPage && !isDMPage && !isAuthPage && (
+        <View
+          style={{
+            width: "100%",
+            paddingTop: STATUS_HEIGHT,
+            paddingBottom: 12,
+            paddingHorizontal: 16,
+            borderBottomWidth: 1,
+            borderColor: colors.border,
+            flexDirection: "row",
+            justifyContent: "space-between",
+            backgroundColor: colors.background,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 24,
+              fontWeight: "bold",
+              color: colors.text,
+            }}
+          >
+            Vbizle
+          </Text>
+
+          <View style={{ flexDirection: "row", gap: 20 }}>
+            <Text style={{ color: colors.text }} onPress={() => router.push("/")}>
+              Ana Sayfa
+            </Text>
+            <Text style={{ color: colors.text }} onPress={() => router.push("/rooms")}>
+              Odalar
+            </Text>
+          </View>
+        </View>
+      )}
+
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Slot />
+      </View>
+
+      <MiniRoomBubble />
+
+      {user && !isRoomPage && !isDMPage && !isAuthPage && <BottomBar />}
+    </SafeAreaView>
+  );
+}
+
+export default function Layout() {
+  return (
     <ThemeProvider>
       <UiProvider>
         <AuthProvider>
           <RoomProvider>
-
-            {/* ⭐ SAFE AREA: Beyaz tema */}
-            <SafeAreaView
-              style={{ flex: 1, backgroundColor: "#fff" }}
-              edges={["left", "right", "bottom"]}
-            >
-              {/* ⭐ STATUS BAR — açık tema */}
-              <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-
-              {/* HEADER */}
-              {user && !isRoomPage && !isDMPage && !isAuthPage && (
-                <View
-                  style={{
-                    width: "100%",
-                    paddingTop: STATUS_HEIGHT,
-                    paddingBottom: 12,
-                    paddingHorizontal: 16,
-                    borderBottomWidth: 1,
-                    borderColor: "rgba(0,0,0,0.08)",
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    backgroundColor: "#fff",
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontSize: 24,
-                      fontWeight: "bold",
-                      color: "#111827",
-                    }}
-                  >
-                    Vbizle
-                  </Text>
-
-                  <View style={{ flexDirection: "row", gap: 20 }}>
-                    <Text
-                      style={{ color: "#111827" }}
-                      onPress={() => router.push("/")}
-                    >
-                      Ana Sayfa
-                    </Text>
-                    <Text
-                      style={{ color: "#111827" }}
-                      onPress={() => router.push("/rooms")}
-                    >
-                      Odalar
-                    </Text>
-                  </View>
-                </View>
-              )}
-
-              <View style={{ flex: 1, backgroundColor: "#fff" }}>
-                <Slot />
-              </View>
-
-              <MiniRoomBubble />
-
-              {user && !isRoomPage && !isDMPage && !isAuthPage && (
-                <BottomBar />
-              )}
-            </SafeAreaView>
-
+            <LayoutInner />
           </RoomProvider>
         </AuthProvider>
       </UiProvider>
