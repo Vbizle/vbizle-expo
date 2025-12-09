@@ -15,11 +15,10 @@ import { UiProvider } from "@/src/(providers)/UiProvider";
 import BottomBar from "@/src/components/BottomBar";
 import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 
-// ⭐ Presence hook
 import { usePresence } from "@/src/(hooks)/usePresence";
 
-// ⭐ YENİ — ThemeProvider ve useTheme import edildi
-import { ThemeProvider, useTheme } from "@/src/(providers)/ThemeProvider";
+// ⭐ YENİ — THEME PROVIDER IMPORT
+import ThemeProvider from "@/src/(providers)/ThemeProvider";
 
 export default function Layout() {
   const router = useRouter();
@@ -79,98 +78,68 @@ export default function Layout() {
     );
   }
 
-  // ================================
-  // ⭐ THEME WRAPPER BAŞLIYOR
-  // ================================
   return (
+    // ⭐ THEME PROVIDER ARTIK EN DIŞTA
     <ThemeProvider>
-      <ThemedApp
-        user={user}
-        isRoomPage={isRoomPage}
-        isDMPage={isDMPage}
-        isAuthPage={isAuthPage}
-        STATUS_HEIGHT={STATUS_HEIGHT}
-      />
-    </ThemeProvider>
-  );
-}
+      <UiProvider>
+        <AuthProvider>
+          <RoomProvider>
 
-// =====================================================
-//  THEMED UYGULAMA KATMANI (TEMA RENKLERİNİ UYGULAR)
-// =====================================================
-function ThemedApp({ user, isRoomPage, isDMPage, isAuthPage, STATUS_HEIGHT }) {
-  const { colors } = useTheme(); // ⭐ RENKLER BURADAN GELİYOR
+            <SafeAreaView
+              style={{ flex: 1, backgroundColor: "black" }}
+              edges={["left", "right", "bottom"]}
+            >
+              <StatusBar backgroundColor="#000" barStyle="light-content" />
 
-  return (
-    <UiProvider>
-      <AuthProvider>
-        <RoomProvider>
-          {/* SAFE AREA */}
-          <SafeAreaView
-            style={{ flex: 1, backgroundColor: colors.background }}
-            edges={["left", "right", "bottom"]}
-          >
-            <StatusBar
-              backgroundColor={colors.background}
-              barStyle={colors.text === "#000" ? "dark-content" : "light-content"}
-            />
-
-            {/* HEADER */}
-            {user && !isRoomPage && !isDMPage && !isAuthPage && (
-              <View
-                style={{
-                  width: "100%",
-                  paddingTop: STATUS_HEIGHT,
-                  paddingBottom: 12,
-                  paddingHorizontal: 16,
-                  borderBottomWidth: 1,
-                  borderColor: colors.border,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text
+              {/* HEADER */}
+              {user && !isRoomPage && !isDMPage && !isAuthPage && (
+                <View
                   style={{
-                    fontSize: 24,
-                    fontWeight: "bold",
-                    color: colors.text,
+                    width: "100%",
+                    paddingTop: STATUS_HEIGHT,
+                    paddingBottom: 12,
+                    paddingHorizontal: 16,
+                    borderBottomWidth: 1,
+                    borderColor: "rgba(255,255,255,0.1)",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
                   }}
                 >
-                  Vbizle
-                </Text>
+                  <Text
+                    style={{
+                      fontSize: 24,
+                      fontWeight: "bold",
+                      color: "white",
+                    }}
+                  >
+                    Vbizle
+                  </Text>
 
-                <View style={{ flexDirection: "row", gap: 20 }}>
-                  <Text
-                    style={{ color: colors.text }}
-                    onPress={() => router.push("/")}
-                  >
-                    Ana Sayfa
-                  </Text>
-                  <Text
-                    style={{ color: colors.text }}
-                    onPress={() => router.push("/rooms")}
-                  >
-                    Odalar
-                  </Text>
+                  <View style={{ flexDirection: "row", gap: 20 }}>
+                    <Text style={{ color: "white" }} onPress={() => router.push("/")}>
+                      Ana Sayfa
+                    </Text>
+                    <Text style={{ color: "white" }} onPress={() => router.push("/rooms")}>
+                      Odalar
+                    </Text>
+                  </View>
                 </View>
+              )}
+
+              <View style={{ flex: 1 }}>
+                <Slot />
               </View>
-            )}
 
-            {/* SAYFA İÇERİĞİ */}
-            <View style={{ flex: 1 }}>
-              <Slot />
-            </View>
+              <MiniRoomBubble />
 
-            {/* KÜÇÜK ODA BALONU */}
-            <MiniRoomBubble />
+              {user && !isRoomPage && !isDMPage && !isAuthPage && (
+                <BottomBar />
+              )}
+            </SafeAreaView>
 
-            {/* ALT BAR */}
-            {user && !isRoomPage && !isDMPage && !isAuthPage && (
-              <BottomBar />
-            )}
-          </SafeAreaView>
-        </RoomProvider>
-      </AuthProvider>
-    </UiProvider>
+          </RoomProvider>
+        </AuthProvider>
+      </UiProvider>
+    </ThemeProvider>
   );
 }

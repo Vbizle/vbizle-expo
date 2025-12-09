@@ -2,7 +2,7 @@
 import {
     themeColorsByName,
     ThemeName,
-} from "@/theme/colors";
+} from "@/src/theme/colors";
 import React, {
     createContext,
     ReactNode,
