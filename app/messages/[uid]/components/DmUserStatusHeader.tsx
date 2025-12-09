@@ -1,7 +1,7 @@
-import { db } from "@/firebase/firebaseConfig";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import React, { useEffect } from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
+import { db } from "@/firebase/firebaseConfig";
 
 export default function DmUserStatusHeader({
   styles,
