@@ -1,0 +1,45 @@
+// src/theme/colors.ts
+
+// Uygulamanın ana renk token'ları
+// Şu an koyu tema için ayarlı, açık tema için de hazır.
+
+export const darkColors = {
+  background: "#000000",
+  backgroundSoft: "#050505",
+  card: "#111827",
+  border: "rgba(255,255,255,0.12)",
+  text: "#FFFFFF",
+  textMuted: "#9CA3AF",
+  primary: "#2563EB",
+  primarySoft: "#1D4ED8",
+  accent: "#22C55E",
+  danger: "#EF4444",
+  inputBg: "#111827",
+  inputBorder: "rgba(255,255,255,0.16)",
+  bubbleMine: "#2563EB",
+  bubbleOther: "#1F2933",
+};
+
+export const lightColors = {
+  background: "#FFFFFF",
+  backgroundSoft: "#F3F4F6",
+  card: "#FFFFFF",
+  border: "rgba(0,0,0,0.08)",
+  text: "#111827",
+  textMuted: "#6B7280",
+  primary: "#2563EB",
+  primarySoft: "#1D4ED8",
+  accent: "#16A34A",
+  danger: "#DC2626",
+  inputBg: "#FFFFFF",
+  inputBorder: "rgba(0,0,0,0.12)",
+  bubbleMine: "#2563EB",
+  bubbleOther: "#E5E7EB",
+};
+
+export type ThemeName = "dark" | "light";
+
+export const themeColorsByName: Record<ThemeName, typeof darkColors> = {
+  dark: darkColors,
+  light: lightColors,
+};
