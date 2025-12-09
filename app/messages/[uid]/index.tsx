@@ -1,40 +1,39 @@
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
-  Text,
+  Alert,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Modal,
-  Alert,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 
-import { Audio } from "expo-av";
 
 import { auth, db, storage } from "@/firebase/firebaseConfig";
 import {
+  addDoc,
+  collection,
+  deleteDoc,
   doc,
   getDoc,
   onSnapshot,
-  collection,
-  addDoc,
-  query,
   orderBy,
+  query,
   serverTimestamp,
   setDoc,
-  deleteDoc,
   updateDoc,
 } from "firebase/firestore";
 
-import { ref, getDownloadURL, uploadBytesResumable } from "firebase/storage";
 import * as ImagePicker from "expo-image-picker";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 
 import { useUi } from "../../../src/(providers)/UiProvider";
 import DmUserStatusHeader from "./components/DmUserStatusHeader";
@@ -45,7 +44,7 @@ import { uploadVoice } from "./utils/uploadVoice";
 // ⭐ YENİ POPUP IMPORT
 import VoicePreviewModal from "./components/VoicePreviewModal";
 
-// ⭐ YENİ SES BUBBLE IMPORT
+// ⭐ SES BUBBLE IMPORT
 import VoiceMessageBubble from "./components/VoiceMessageBubble";
 
 export default function DirectMessagePage() {
@@ -310,12 +309,13 @@ export default function DirectMessagePage() {
   if (!me || !otherUser) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={{ color: "#fff" }}>Yükleniyor...</Text>
+        <Text style={{ color: "#444" }}>Yükleniyor...</Text>
       </SafeAreaView>
     );
   }
 
-  const lastMyMessageId = messages.filter((msg) => msg.uid === me.uid).at(-1)?.id;
+  const lastMyMessageId =
+    messages.filter((msg) => msg.uid === me.uid).at(-1)?.id;
 
   return (
     <KeyboardAvoidingView
@@ -324,7 +324,7 @@ export default function DirectMessagePage() {
       keyboardVerticalOffset={Platform.OS === "ios" ? 10 : 0}
     >
       <SafeAreaView style={styles.container}>
-        <StatusBar backgroundColor="#000" barStyle="light-content" />
+        <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
         <DmUserStatusHeader
           styles={styles}
@@ -360,12 +360,12 @@ export default function DirectMessagePage() {
                   style={{
                     paddingVertical: 10,
                     paddingHorizontal: 20,
-                    backgroundColor: "#333",
+                    backgroundColor: "#ddd",
                     borderRadius: 10,
                     marginRight: 10,
                   }}
                 >
-                  <Text style={{ color: "#fff", fontSize: 15 }}>İptal</Text>
+                  <Text style={{ color: "#333", fontSize: 15 }}>İptal</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -422,26 +422,29 @@ export default function DirectMessagePage() {
               !!msgTime &&
               msgTime <= lastSeenTime;
 
-            // ⭐ SES MESAJI → VoiceMessageBubble'a taşındı
+            // ⭐ SES MESAJI → VoiceMessageBubble
             if (m.voiceUrl)
-           return (
-           <VoiceMessageBubble
-          key={m.id}
-          m={m}
-          mine={mine}
-         isSeen={isSeen}
-         isLastMyMessage={m.id === lastMyMessageId}
-          />
-        );
+              return (
+                <VoiceMessageBubble
+                  key={m.id}
+                  m={m}
+                  mine={mine}
+                  isSeen={isSeen}
+                  isLastMyMessage={m.id === lastMyMessageId}
+                />
+              );
 
-            // FOTOĞRAF
+            // ⭐ FOTOĞRAF
             if (m.imgUrl)
               return (
                 <View key={m.id} style={{ marginBottom: 8 }}>
                   <TouchableOpacity
                     onPress={() => setImageModal(m.imgUrl)}
                     onLongPress={() => mine && deleteMessage(m.id)}
-                    style={[styles.imgBubble, mine ? styles.right : styles.left]}
+                    style={[
+                      styles.imgBubble,
+                      mine ? styles.right : styles.left,
+                    ]}
                   >
                     <Image source={{ uri: m.imgUrl }} style={styles.msgImg} />
                   </TouchableOpacity>
@@ -449,7 +452,7 @@ export default function DirectMessagePage() {
                   {mine && m.id === lastMyMessageId && (
                     <Text
                       style={{
-                        color: "#777",
+                        color: "#999",
                         fontSize: 11,
                         marginLeft: "auto",
                         marginRight: 4,
@@ -461,7 +464,7 @@ export default function DirectMessagePage() {
                 </View>
               );
 
-            // METİN MESAJI
+            // ⭐ METİN MESAJI
             return (
               <View key={m.id} style={{ marginBottom: 8 }}>
                 <TouchableOpacity
@@ -477,7 +480,7 @@ export default function DirectMessagePage() {
                 {mine && m.id === lastMyMessageId && (
                   <Text
                     style={{
-                      color: "#777",
+                      color: "#999",
                       fontSize: 11,
                       marginLeft: "auto",
                       marginRight: 4,
@@ -498,7 +501,7 @@ export default function DirectMessagePage() {
               onPress={() => setMenuOpen(!menuOpen)}
               style={styles.hamburgerBtn}
             >
-              <Text style={{ color: "#fff", fontSize: 22 }}>☰</Text>
+              <Text style={{ color: "#444", fontSize: 22 }}>☰</Text>
             </TouchableOpacity>
 
             {menuOpen && (
@@ -520,7 +523,7 @@ export default function DirectMessagePage() {
               handleTyping();
             }}
             placeholder="Mesaj yaz..."
-            placeholderTextColor="#888"
+            placeholderTextColor="#999"
           />
 
           <TouchableOpacity onPress={sendMessage} style={styles.sendBtn}>
@@ -532,14 +535,20 @@ export default function DirectMessagePage() {
   );
 }
 
+/* ======================================================
+                     STYLES — BEYAZ TEMA
+====================================================== */
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
+  container: { flex: 1, backgroundColor: "#fff" },
+
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000",
+    backgroundColor: "#fff",
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -548,10 +557,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     gap: 10,
     borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "#e5e5e5",
+    backgroundColor: "#fff",
   },
-  backBtn: { fontSize: 24, color: "#fff" },
+
+  backBtn: { fontSize: 24, color: "#333" },
+
   avatar: { width: 45, height: 45, borderRadius: 999 },
+
   onlineDot: {
     position: "absolute",
     bottom: 0,
@@ -561,11 +574,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#22c55e",
     borderWidth: 2,
-    borderColor: "#000",
+    borderColor: "#fff",
   },
-  name: { fontSize: 18, color: "#fff", fontWeight: "600" },
+
+  name: { fontSize: 18, color: "#111", fontWeight: "600" },
   onlineText: { fontSize: 12, color: "#22c55e" },
-  typing: { fontSize: 12, color: "#3b82f6" },
+  typing: { fontSize: 12, color: "#2563eb" },
+
   msgList: { padding: 10, paddingBottom: 2 },
 
   bubble: {
@@ -574,20 +589,23 @@ const styles = StyleSheet.create({
     maxWidth: "75%",
     marginBottom: 3,
   },
-  bubbleText: { color: "#fff" },
+
+  bubbleText: { color: "#000" },
 
   myBubble: {
     alignSelf: "flex-end",
     backgroundColor: "#2563eb",
     borderBottomRightRadius: 0,
   },
+
   otherBubble: {
     alignSelf: "flex-start",
-    backgroundColor: "#222",
+    backgroundColor: "#f1f1f1",
     borderBottomLeftRadius: 0,
   },
 
   imgBubble: { marginBottom: 10 },
+
   msgImg: {
     width: 200,
     height: 200,
@@ -597,21 +615,14 @@ const styles = StyleSheet.create({
   right: { alignSelf: "flex-end" },
   left: { alignSelf: "flex-start" },
 
-  voiceBubble: {
-    padding: 10,
-    backgroundColor: "#333",
-    borderRadius: 10,
-    marginVertical: 5,
-  },
-
   modalBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
-    justifyContent: "flex-start",
+    backgroundColor: "rgba(0,0,0,0.85)",
+    justifyContent: "center",
     alignItems: "center",
-    paddingTop: 50,
-    paddingBottom: 50,
+    padding: 20,
   },
+
   modalImg: { width: "90%", height: "90%" },
 
   sendBar: {
@@ -623,18 +634,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 10,
     paddingTop: 6,
-    backgroundColor: "transparent",
+    backgroundColor: "#fff",
     alignItems: "center",
+    borderTopWidth: 1,
+    borderColor: "#e5e5e5",
   },
 
   input: {
     flex: 1,
     height: 36,
-    backgroundColor: "#222",
+    backgroundColor: "#f1f1f1",
     borderRadius: 12,
     paddingHorizontal: 10,
     marginHorizontal: 1,
-    color: "#fff",
+    color: "#000",
   },
 
   sendBtn: {
@@ -654,7 +667,7 @@ const styles = StyleSheet.create({
   hamburgerBtn: {
     width: 42,
     height: 32,
-    backgroundColor: "#222",
+    backgroundColor: "#f1f1f1",
     borderRadius: 75,
     justifyContent: "center",
     alignItems: "center",
@@ -664,12 +677,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 50,
     left: 0,
-    backgroundColor: "#222",
+    backgroundColor: "#fff",
     padding: 8,
     borderRadius: 10,
     width: 150,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "#ddd",
     zIndex: 9999,
   },
 
@@ -679,7 +692,7 @@ const styles = StyleSheet.create({
   },
 
   popupText: {
-    color: "#fff",
+    color: "#333",
     fontSize: 15,
   },
 });
