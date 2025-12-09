@@ -1,28 +1,32 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  Image,
+  ScrollView,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  ScrollView,
-  Image,
-  StyleSheet,
+  View,
 } from "react-native";
 
 import { useRouter } from "expo-router";
-import { auth, db } from "../firebase/firebaseConfig"; // ✔️ DOĞRU YOL
+import { auth, db } from "../firebase/firebaseConfig";
 
 import {
   collection,
+  doc,
   getDocs,
   onSnapshot,
   query,
-  where,
-  doc,
   updateDoc,
+  where,
 } from "firebase/firestore";
+
+// ⭐ THEME
+import { useTheme } from "@/src/(providers)/ThemeProvider";
 
 export default function HomePage() {
   const router = useRouter();
+  const { colors } = useTheme();
 
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [rooms, setRooms] = useState<any[]>([]);
@@ -104,20 +108,34 @@ export default function HomePage() {
   // RENDER
   // ========================================================
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* TOP BAR */}
-      <View style={styles.topBar}>
-        <Text style={styles.title}>Aktif Odalar</Text>
+      <View
+        style={[
+          styles.topBar,
+          {
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <Text style={[styles.title, { color: colors.text }]}>Aktif Odalar</Text>
 
-        <TouchableOpacity style={styles.createBtn} onPress={handleCreateRoom}>
-          <Text style={styles.createBtnText}>Oda Aç</Text>
+        <TouchableOpacity
+          style={[styles.createBtn, { backgroundColor: colors.primary }]}
+          onPress={handleCreateRoom}
+        >
+          <Text style={[styles.createBtnText, { color: colors.text }]}>
+            Oda Aç
+          </Text>
         </TouchableOpacity>
       </View>
 
       {/* ROOM LIST */}
       <ScrollView style={styles.scroll}>
         {rooms.length === 0 && (
-          <Text style={styles.noRoomText}>Şu anda aktif oda yok.</Text>
+          <Text style={[styles.noRoomText, { color: colors.textMuted }]}>
+            Şu anda aktif oda yok.
+          </Text>
         )}
 
         <View style={styles.grid}>
@@ -125,7 +143,13 @@ export default function HomePage() {
             <TouchableOpacity
               key={room.id}
               onPress={() => router.push(`/rooms/${room.id}`)}
-              style={styles.roomCard}
+              style={[
+                styles.roomCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
               activeOpacity={0.8}
             >
               <Image
@@ -138,8 +162,12 @@ export default function HomePage() {
               />
 
               <View style={styles.roomInfo}>
-                <Text style={styles.roomName}>{room.name}</Text>
-                <Text style={styles.roomCount}>
+                <Text style={[styles.roomName, { color: colors.text }]}>
+                  {room.name}
+                </Text>
+                <Text
+                  style={[styles.roomCount, { color: colors.textMuted }]}
+                >
                   👥 {room.onlineCount || 0} kişi online
                 </Text>
               </View>
@@ -154,13 +182,11 @@ export default function HomePage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black",
   },
 
   topBar: {
     padding: 16,
     borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -169,18 +195,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "bold",
-    color: "white",
   },
 
   createBtn: {
-    backgroundColor: "#2563eb",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
   },
 
   createBtnText: {
-    color: "white",
     fontWeight: "600",
   },
 
@@ -191,7 +214,6 @@ const styles = StyleSheet.create({
 
   noRoomText: {
     textAlign: "center",
-    color: "rgba(255,255,255,0.6)",
     marginTop: 32,
   },
 
@@ -203,9 +225,7 @@ const styles = StyleSheet.create({
 
   roomCard: {
     width: "48%",
-    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
     borderRadius: 12,
     marginBottom: 16,
     overflow: "hidden",
@@ -224,12 +244,10 @@ const styles = StyleSheet.create({
   roomName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "white",
   },
 
   roomCount: {
     marginTop: 4,
     fontSize: 12,
-    color: "rgba(255,255,255,0.6)",
   },
 });
