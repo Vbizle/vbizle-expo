@@ -24,7 +24,9 @@ import { usePresence } from "@/src/(hooks)/usePresence";
 function LayoutInner() {
   const router = useRouter();
   const segments = useSegments();
-  const { colors } = useTheme();   // ⭐ TÜM RENKLER BURADAN GELECEK
+
+  // ⭐ Tema bilgisi
+  const { colors, theme } = useTheme();
 
   const [user, setUser] = useState<any>(undefined);
   const loading = user === undefined;
@@ -56,7 +58,7 @@ function LayoutInner() {
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.background,
+          backgroundColor: colors.backgroundSoft, // ⭐ daha mat bekleme ekranı
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -70,12 +72,12 @@ function LayoutInner() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: colors.backgroundSoft }} // ⭐ mat ana arka plan
       edges={["left", "right", "bottom"]}
     >
       <StatusBar
-        backgroundColor={colors.background}
-        barStyle={colors.text === "#111827" ? "dark-content" : "light-content"}
+        backgroundColor={colors.backgroundSoft}
+        barStyle={theme === "light" ? "dark-content" : "light-content"} // ⭐ DOĞRU BAR
       />
 
       {/* HEADER */}
@@ -90,7 +92,7 @@ function LayoutInner() {
             borderColor: colors.border,
             flexDirection: "row",
             justifyContent: "space-between",
-            backgroundColor: colors.background,
+            backgroundColor: colors.backgroundSoft, // ⭐ header = soft
           }}
         >
           <Text
@@ -104,17 +106,29 @@ function LayoutInner() {
           </Text>
 
           <View style={{ flexDirection: "row", gap: 20 }}>
-            <Text style={{ color: colors.text }} onPress={() => router.push("/")}>
+            <Text
+              style={{ color: colors.text }}
+              onPress={() => router.push("/")}
+            >
               Ana Sayfa
             </Text>
-            <Text style={{ color: colors.text }} onPress={() => router.push("/rooms")}>
+            <Text
+              style={{ color: colors.text }}
+              onPress={() => router.push("/rooms")}
+            >
               Odalar
             </Text>
           </View>
         </View>
       )}
 
-      <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* CONTENT */}
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.background, // ⭐ içerik daha beyaz / temiz
+        }}
+      >
         <Slot />
       </View>
 
