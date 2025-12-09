@@ -40,7 +40,7 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
         alignSelf: mine ? "flex-end" : "flex-start",
 
         // 💠 MAT BEYAZ TEMA — BALONLAR
-        backgroundColor: mine ? "#2563eb" : "#E8E8EB",
+        backgroundColor: mine ? "#0e46bea8" : "#E8E8EB",
 
         paddingVertical: 0,
         paddingHorizontal: 9,
@@ -64,7 +64,7 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
           alignItems: "center",
 
           // 💠 LIGHT MODE UYUMLU BUTTON BACKGROUND
-          backgroundColor: mine ? "#1e40af" : "#D0D0D5",
+          backgroundColor: mine ? "#e6e3e3ff" : "#D0D0D5",
 
           marginRight: 10,
         }}
@@ -83,7 +83,7 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
       <Text
         style={{
           color: mine ? "#fff" : "#1C1C1E",
-          fontSize: 16,
+          fontSize: 14,
           marginRight: 8,
         }}
       >
