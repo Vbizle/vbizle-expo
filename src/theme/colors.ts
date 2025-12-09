@@ -1,6 +1,6 @@
 // src/theme/colors.ts
 
-// 💠 DARK THEME (Koyu)
+// 💠 DARK THEME (Koyu) — Aynı kalıyor
 export const darkColors = {
   background: "#000000",
   backgroundSoft: "#050505",
@@ -18,31 +18,42 @@ export const darkColors = {
   bubbleOther: "#1F2933",
 };
 
-// 💠 LIGHT THEME (Açık)
+// 💠 LIGHT THEME (YENİ — Mat / Soft / Premium)
 export const lightColors = {
-  background: "#FFFFFF",
-  backgroundSoft: "#F3F4F6",
-  card: "#FFFFFF",
-  border: "rgba(0,0,0,0.08)",
-  text: "#111827",
-  textMuted: "#6B7280",
-  primary: "#2563EB",
+  // Daha soft, daha doğal beyaz (iOS style)
+  background: "#F7F7F9",       // Ana arkaplan → Saf beyaz değil, mat gri-beyaz
+  backgroundSoft: "#EFEFF2",   // Sekmeler / listeler için yumuşak gri ton
+  card: "#FFFFFF",             // Kartlar hafif temiz beyaz — kontrast güzel
+  border: "rgba(0,0,0,0.06)",  // Daha hafif border — premium his
+
+  // Yazılar
+  text: "#1C1C1E",             // iOS koyu gri
+  textMuted: "#6E6E73",        // Soft muted gri — göz yormaz
+
+  // Ana renkler
+  primary: "#2563EB",          // Vbizle için değişmedi
   primarySoft: "#1D4ED8",
-  accent: "#16A34A",
+
+  // Accent (daha soft yeşil)
+  accent: "#22C55E",
+
   danger: "#DC2626",
-  inputBg: "#FFFFFF",
-  inputBorder: "rgba(0,0,0,0.12)",
+
+  // Input alanları
+  inputBg: "#FFFFFF",          // Temiz ama çok parlak olmayan
+  inputBorder: "rgba(0,0,0,0.10)",
+
+  // Mesaj balonları
   bubbleMine: "#2563EB",
-  bubbleOther: "#E5E7EB",
+  bubbleOther: "#E8E8EB",      // Daha soft gri balon
 };
 
 export type ThemeName = "dark" | "light";
 
-// ❗ Burada tip hatasını çözüyoruz: darkColors'a sabitlemiyoruz.
-// İki tema nesnesinin birleşimini otomatik türetiyoruz.
+// Tipler
 export type ThemeColors = typeof darkColors & typeof lightColors;
 
-// ✔ Tam güvenli tema eşlemesi
+// ✔ Tema eşlemesi
 export const themeColorsByName: Record<ThemeName, ThemeColors> = {
   dark: darkColors,
   light: lightColors,
