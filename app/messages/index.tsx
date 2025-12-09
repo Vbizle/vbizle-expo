@@ -1,3 +1,4 @@
+/* Tüm importlar aynı */
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -29,13 +30,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
 ====================================================== */
-function IdProfilePopup({
-  user,
-  onClose,
-}: {
-  user: { uid: string; name: string; avatar?: string; vbId?: string };
-  onClose: () => void;
-}) {
+function IdProfilePopup({ user, onClose }) {
   const router = useRouter();
   const photo = user.avatar || "/user.png";
 
@@ -43,15 +38,9 @@ function IdProfilePopup({
     <Modal transparent animationType="fade">
       <View style={styles.popupBg}>
         <View style={styles.popupCard}>
-          <Image
-            source={{ uri: photo }}
-            style={styles.popupAvatar}
-          />
+          <Image source={{ uri: photo }} style={styles.popupAvatar} />
 
-          {user.vbId && (
-            <Text style={styles.popupId}>ID: {user.vbId}</Text>
-          )}
-
+          {user.vbId && <Text style={styles.popupId}>ID: {user.vbId}</Text>}
           <Text style={styles.popupName}>{user.name}</Text>
 
           <TouchableOpacity
@@ -79,20 +68,16 @@ function IdProfilePopup({
 export default function MessagesPage() {
   const router = useRouter();
 
-  const [me, setMe] = useState<any>(null);
-  const [list, setList] = useState<any[]>([]);
+  const [me, setMe] = useState(null);
+  const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ID Arama
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchId, setSearchId] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [searchUser, setSearchUser] = useState<any | null>(null);
+  const [searchUser, setSearchUser] = useState(null);
 
-  /* ------------------------------------------------------
-     Kullanıcıyı çek
-  ------------------------------------------------------ */
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) return router.push("/login");
@@ -109,9 +94,6 @@ export default function MessagesPage() {
     return () => unsub();
   }, []);
 
-  /* ------------------------------------------------------
-     DM LİSTESİ
-  ------------------------------------------------------ */
   useEffect(() => {
     if (!me) return;
 
@@ -120,7 +102,6 @@ export default function MessagesPage() {
       const qRef = query(msgRef, orderBy("time", "desc"));
 
       const snap = await getDocs(qRef);
-
       const conversations: any = {};
 
       snap.forEach((d) => {
@@ -175,9 +156,6 @@ export default function MessagesPage() {
     return () => unsub();
   }, [me]);
 
-  /* ------------------------------------------------------
-     ID ARAMA
-  ------------------------------------------------------ */
   const handleSearch = async () => {
     setSearchError("");
     setSearchUser(null);
@@ -206,30 +184,25 @@ export default function MessagesPage() {
         avatar: d.avatar,
         vbId: d.vbId,
       });
-    } catch (err) {
+    } catch {
       setSearchError("Bir hata oluştu");
     } finally {
       setSearchLoading(false);
     }
   };
 
-  /* ------------------------------------------------------
-     LOADING
-  ------------------------------------------------------ */
   if (loading || !me) {
     return (
       <View style={styles.center}>
-        <Text style={{ color: "#fff" }}>Yükleniyor...</Text>
+        <Text style={{ color: "#1C1C1E" }}>Yükleniyor...</Text>
       </View>
     );
   }
 
-  /* ------------------------------------------------------
-     UI
-  ------------------------------------------------------ */
   return (
-    <View style={{ flex: 1, backgroundColor: "black", paddingHorizontal: 14 }}>
-      {/* BAŞLIK + ID ARAMA */}
+    <View style={{ flex: 1, backgroundColor: "#F2F2F5", paddingHorizontal: 14 }}>
+      
+      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mesajlarım</Text>
 
@@ -240,7 +213,7 @@ export default function MessagesPage() {
                 value={searchId}
                 onChangeText={setSearchId}
                 placeholder="ID (VB-1)"
-                placeholderTextColor="#aaa"
+                placeholderTextColor="#9A9A9E"
                 style={styles.searchInput}
               />
 
@@ -267,7 +240,7 @@ export default function MessagesPage() {
         <Text style={styles.searchError}>{searchError}</Text>
       ) : null}
 
-      {/* DM LİSTESİ */}
+      {/* DM LIST */}
       <ScrollView style={{ marginTop: 10 }}>
         {list.map((m, i) => (
           <TouchableOpacity
@@ -275,22 +248,16 @@ export default function MessagesPage() {
             style={styles.msgItem}
             onPress={() => router.push(`/messages/${m.otherId}`)}
           >
-            {/* AVATAR */}
             <View>
-              <Image
-                source={{ uri: m.otherAvatar }}
-                style={styles.avatar}
-              />
+              <Image source={{ uri: m.otherAvatar }} style={styles.avatar} />
               {m.otherOnline && <View style={styles.onlineDot} />}
             </View>
 
-            {/* İSİM + LAST MSG */}
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{m.otherName}</Text>
               <Text style={styles.lastMsg}>{m.lastMsg}</Text>
             </View>
 
-            {/* UNREAD */}
             {m.unread > 0 && (
               <View style={styles.unreadBadge}>
                 <Text style={styles.unreadText}>{m.unread}</Text>
@@ -306,7 +273,6 @@ export default function MessagesPage() {
         )}
       </ScrollView>
 
-      {/* ID SEARCH POPUP */}
       {searchUser && (
         <IdProfilePopup
           user={searchUser}
@@ -318,12 +284,12 @@ export default function MessagesPage() {
 }
 
 /* ======================================================
-                     STYLESHEET
+                     STYLES — MAT BEYAZ
 ====================================================== */
 const styles = StyleSheet.create({
   center: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#F2F2F5",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -334,7 +300,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   headerTitle: {
-    color: "#fff",
+    color: "#1C1C1E",
     fontSize: 22,
     fontWeight: "700",
   },
@@ -342,9 +308,9 @@ const styles = StyleSheet.create({
   searchBox: { flexDirection: "row", alignItems: "center" },
   searchInputWrap: {
     flexDirection: "row",
-    backgroundColor: "#111",
+    backgroundColor: "#FAFAFC",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "rgba(0,0,0,0.08)",
     paddingHorizontal: 10,
     borderRadius: 20,
     alignItems: "center",
@@ -352,7 +318,7 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   searchInput: {
-    color: "#fff",
+    color: "#1C1C1E",
     width: 80,
     marginRight: 6,
   },
@@ -362,33 +328,33 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
   },
-  searchBtnText: { color: "white", fontSize: 12 },
+  searchBtnText: { color: "#fff", fontSize: 12 },
 
   searchToggle: {
     width: 32,
     height: 32,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#555",
+    borderColor: "rgba(0,0,0,0.1)",
     alignItems: "center",
     justifyContent: "center",
   },
 
   searchError: {
-    color: "#f44",
+    color: "#dc2626",
     marginTop: 6,
     marginLeft: 4,
   },
 
   msgItem: {
-    backgroundColor: "#111",
+    backgroundColor: "#FFFFFF",
     padding: 12,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.06)",
   },
 
   avatar: { width: 54, height: 54, borderRadius: 999 },
@@ -401,16 +367,16 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: "#111",
+    borderColor: "#FFFFFF",
   },
 
   name: {
     fontSize: 18,
-    color: "white",
+    color: "#1C1C1E",
     fontWeight: "600",
   },
   lastMsg: {
-    color: "rgba(255,255,255,0.6)",
+    color: "#6E6E73",
     marginTop: 2,
   },
 
@@ -431,30 +397,30 @@ const styles = StyleSheet.create({
 
   arrow: {
     marginLeft: 6,
-    color: "rgba(255,255,255,0.4)",
+    color: "#6E6E73",
   },
 
   empty: {
-    color: "rgba(255,255,255,0.5)",
+    color: "#7A7A7E",
     textAlign: "center",
     marginTop: 40,
   },
 
   popupBg: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
 
   popupCard: {
-    backgroundColor: "#111",
+    backgroundColor: "#FFFFFF",
     width: 280,
     padding: 20,
     borderRadius: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#333",
+    borderColor: "rgba(0,0,0,0.08)",
   },
   popupAvatar: {
     width: 90,
@@ -463,11 +429,11 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   popupId: {
-    color: "#fff",
+    color: "#1C1C1E",
     fontSize: 14,
     marginBottom: 4,
   },
-  popupName: { color: "#fff", fontSize: 20, marginBottom: 14 },
+  popupName: { color: "#1C1C1E", fontSize: 20, marginBottom: 14 },
 
   popupBtn: {
     backgroundColor: "#2563eb",

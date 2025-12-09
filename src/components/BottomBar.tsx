@@ -15,11 +15,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 export default function BottomBar() {
   const path = usePathname();
   const router = useRouter();
-  const insets = useSafeAreaInsets(); // ← EN ÖNEMLİ EKLEME
+  const insets = useSafeAreaInsets();
 
   const [unread, setUnread] = useState(0);
 
-  // 🔥 Global unread dinleyici
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
@@ -47,14 +46,11 @@ export default function BottomBar() {
       style={[
         styles.container,
         {
-          paddingBottom: insets.bottom,         // ⭐ Navigation bar üstüne oturtur
-          height: 65 + insets.bottom,           // ⭐ Alt barın ezilmesini engeller
+          paddingBottom: insets.bottom,
+          height: 65 + insets.bottom,
         },
       ]}
     >
-      {/* ===================== */}
-      {/*       ANASAYFA        */}
-      {/* ===================== */}
       <TouchableOpacity style={styles.tab} onPress={() => router.push("/")}>
         <Text style={[styles.icon, isTab("/") && styles.active]}>⬛</Text>
         <Text style={[styles.label, isTab("/") && styles.active]}>
@@ -62,9 +58,6 @@ export default function BottomBar() {
         </Text>
       </TouchableOpacity>
 
-      {/* ===================== */}
-      {/*      MESAJLARIM       */}
-      {/* ===================== */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/messages")}
@@ -84,9 +77,6 @@ export default function BottomBar() {
         </Text>
       </TouchableOpacity>
 
-      {/* ===================== */}
-      {/*        PROFİL         */}
-      {/* ===================== */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/profile")}
@@ -103,19 +93,15 @@ export default function BottomBar() {
   );
 }
 
-// ====================================================================
-//                            STYLES
-// ====================================================================
-
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
     bottom: 0,
     width: "100%",
     paddingTop: 10,
-    backgroundColor: "#111",
+    backgroundColor: "#F2F2F5",            // ⭐ Soft premium mat tabbar
     borderTopWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "rgba(0,0,0,0.08)",       // ⭐ iOS-style soft border
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
@@ -129,13 +115,13 @@ const styles = StyleSheet.create({
 
   icon: {
     fontSize: 22,
-    color: "gray",
+    color: "#7A7A7E",                      // ⭐ Modern muted gray
     marginBottom: 2,
   },
 
   label: {
     fontSize: 12,
-    color: "gray",
+    color: "#7A7A7E",                      // ⭐ Premium muted gray
   },
 
   active: {
