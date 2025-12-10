@@ -161,18 +161,16 @@ export default function MessagesPage() {
         const lastSeen = meta.lastSeenTime ?? 0;
 
         // ❗ Kullanıcı DM’i gizlemişse
-        if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
-          if (lastMsgTime > lastSeen) {
-            await setDoc(
-              metaRef,
-              {
-                hiddenFor: { [me.uid]: false },
-                lastSeenTime: lastMsgTime,
-              },
-              { merge: true }
-            );
-          } else continue;
-        }
+       if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
+  await setDoc(
+    metaRef,
+    {
+      hiddenFor: { [me.uid]: false },
+      lastSeenTime: lastMsgTime, // güncelle
+    },
+    { merge: true }
+  );
+}
 
         finalArr.push({
           ...item,
