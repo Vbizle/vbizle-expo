@@ -59,26 +59,20 @@ export default function AuthProvider({ children }: any) {
       setFirebaseUser(u);
 
       if (!u) {
-        // Kullanıcı çıkış yaptı
         setMe(null);
         setLoaded(true);
         return;
       }
 
       const userRef = doc(db, "users", u.uid);
-
-      // Kullanıcı Firestore’da var mı?
       const snap = await getDoc(userRef);
 
-      // Eğer kullanıcı henüz Firestore’da yoksa (yeni register veya eski data bozuk)
       if (!snap.exists()) {
-        // me = null → setup ekranına yönlendirilebilir
         setMe(null);
         setLoaded(true);
         return;
       }
 
-      // 1) VB-ID oluştur
       await ensureSequentialVbId(u.uid);
 
       const data = snap.data() || {};
@@ -92,7 +86,6 @@ export default function AuthProvider({ children }: any) {
         birthDate: data.birthDate,
       });
 
-      // 2) Kullanıcı online yap
       await updateDoc(userRef, { online: true });
 
       setLoaded(true);
@@ -129,7 +122,7 @@ export default function AuthProvider({ children }: any) {
   useVbWallet(firebaseUser);
 
   // --------------------------------------------------------
-  // DM Bildirimleri (AYNEN KORUNDU)
+  // DM Bildirimleri + HIDDEN FIX (YENİ EKLENDİ)
   // --------------------------------------------------------
   useEffect(() => {
     if (!me) return;
@@ -144,11 +137,18 @@ export default function AuthProvider({ children }: any) {
 
         const [a, b] = convId.split("_");
         const otherId = a === me.uid ? b : b === me.uid ? a : null;
-
         if (!otherId) return;
 
         const unread = data?.unread?.[me.uid] ?? 0;
         const lastSender = data?.lastSender;
+
+        // ======================================================
+        // ⭐ YENİ EKLENEN KRİTİK DÜZELTME (Hidden → False)
+        // ======================================================
+        if (data.hidden === true && unread > 0 && lastSender !== me.uid) {
+          await updateDoc(change.doc.ref, { hidden: false });
+        }
+        // ======================================================
 
         if (unread > 0 && lastSender !== me.uid) {
           const userSnap = await getDoc(doc(db, "users", otherId));
