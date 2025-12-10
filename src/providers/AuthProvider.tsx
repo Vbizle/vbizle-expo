@@ -29,7 +29,7 @@ async function ensureSequentialVbId(uid: string) {
     let counterSnap = await tx.get(counterRef);
 
     if (!counterSnap.exists()) {
-      tx.set(counterRef, { last: 0 });
+      tx.set(counterSnap.ref, { last: 0 });
       counterSnap = { exists: () => true, data: () => ({ last: 0 }) };
     }
 
@@ -65,27 +65,37 @@ export default function AuthProvider({ children }: any) {
       }
 
       const userRef = doc(db, "users", u.uid);
+
+      // Firestore kullanıcısı var mı?
       const snap = await getDoc(userRef);
 
       if (!snap.exists()) {
-        setMe(null);
+        // ❗ ESKİ HATALI DAVRANIŞ:
+        // setMe(null) → DM listesi bozuluyordu
+        // ❗ YENİ DOĞRU DAVRANIŞ:
+        setMe(undefined);
         setLoaded(true);
         return;
       }
 
+      // VB-ID oluştur
       await ensureSequentialVbId(u.uid);
 
       const data = snap.data() || {};
 
-      setMe({
+      // ✔ ME doğru şekilde oluşturuluyor
+      const finalMe = {
         uid: u.uid,
         name: data.username,
         avatar: data.avatar ?? "",
         vbId: data.vbId,
         gender: data.gender,
         birthDate: data.birthDate,
-      });
+      };
 
+      setMe(finalMe);
+
+      // Kullanıcı online
       await updateDoc(userRef, { online: true });
 
       setLoaded(true);
@@ -117,15 +127,15 @@ export default function AuthProvider({ children }: any) {
   }, [firebaseUser]);
 
   // --------------------------------------------------------
-  // VB Cüzdan (AYNEN KORUNDU)
+  // VB Cüzdan
   // --------------------------------------------------------
   useVbWallet(firebaseUser);
 
   // --------------------------------------------------------
-  // DM Bildirimleri + HIDDEN FIX (YENİ EKLENDİ)
+  // DM Bildirimleri
   // --------------------------------------------------------
   useEffect(() => {
-    if (!me) return;
+    if (!me || !me.uid) return;
 
     const unsub = onSnapshot(collectionGroup(db, "meta"), async (snap) => {
       snap.docChanges().forEach(async (change) => {
@@ -137,18 +147,11 @@ export default function AuthProvider({ children }: any) {
 
         const [a, b] = convId.split("_");
         const otherId = a === me.uid ? b : b === me.uid ? a : null;
+
         if (!otherId) return;
 
         const unread = data?.unread?.[me.uid] ?? 0;
         const lastSender = data?.lastSender;
-
-        // ======================================================
-        // ⭐ YENİ EKLENEN KRİTİK DÜZELTME (Hidden → False)
-        // ======================================================
-        if (data.hidden === true && unread > 0 && lastSender !== me.uid) {
-          await updateDoc(change.doc.ref, { hidden: false });
-        }
-        // ======================================================
 
         if (unread > 0 && lastSender !== me.uid) {
           const userSnap = await getDoc(doc(db, "users", otherId));
@@ -161,11 +164,8 @@ export default function AuthProvider({ children }: any) {
     });
 
     return () => unsub();
-  }, [me]);
+  }, [me?.uid]);
 
-  // --------------------------------------------------------
-  // Yükleme bitmeden UI açılmasın
-  // --------------------------------------------------------
   if (!loaded) return null;
 
   return children;
