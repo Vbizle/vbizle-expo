@@ -22,13 +22,14 @@ import {
   onSnapshot,
   orderBy,
   query,
+  setDoc,
   where,
 } from "firebase/firestore";
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useUi } from "@/src/(providers)/UiProvider";
 
-// 📌 EKLENDİ — uzun basma seçenek modalı
+// 📌 Uzun basma modalı
 import DmOptionsModal from "./components/DmOptionsModal";
 
 /* ======================================================
@@ -73,19 +74,19 @@ export default function MessagesPage() {
   const router = useRouter();
   const { activeDM } = useUi();
 
-  const [me, setMe] = useState<any>(null);
-  const [list, setList] = useState<any[]>([]);
+  const [me, setMe] = useState(null);
+  const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchId, setSearchId] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [searchUser, setSearchUser] = useState<any>(null);
+  const [searchUser, setSearchUser] = useState(null);
 
-  // 📌 uzun basma için state
+  // 📌 Uzun basma
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   /* ======================================================
      KULLANICIYI ÇEK
@@ -107,7 +108,7 @@ export default function MessagesPage() {
   }, []);
 
   /* ======================================================
-     DM LİSTESİ YÜKLEME
+     DM LİSTESİ + HIDDEN/SILINMIS KISIM
   ====================================================== */
   useEffect(() => {
     if (!me) return;
@@ -117,7 +118,7 @@ export default function MessagesPage() {
       const qRef = query(msgRef, orderBy("time", "desc"));
 
       const snap = await getDocs(qRef);
-      const conversations: any = {};
+      const conversations = {};
 
       snap.forEach((d) => {
         const data = d.data();
@@ -144,22 +145,40 @@ export default function MessagesPage() {
         }
       });
 
-      const finalArr: any[] = [];
+      const finalArr = [];
 
+      // 🔥 BURASI TAMAMEN DÜZELTİLDİ
       for (let convId in conversations) {
         const item = conversations[convId];
 
         const userSnap = await getDoc(doc(db, "users", item.otherId));
-        const uData: any = userSnap.data();
+        const uData = userSnap.data();
 
-        const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
-        const meta: any = metaSnap.exists() ? metaSnap.data() : {};
+        const metaRef = doc(db, "dm", convId, "meta", "info");
+        const metaSnap = await getDoc(metaRef);
 
+        const meta = metaSnap.exists() ? metaSnap.data() : {};
         const unread = meta.unread?.[me.uid] ?? 0;
 
-        // ❗ BU KULLANICI İÇİN SİLİNMİŞSE (hiddenFor), LİSTEYE EKLEME
+        const lastMsgTime = item.time?.seconds ?? 0;
+        const lastSeen = meta.lastSeenTime ?? 0;
+
+        // ❗ Kullanıcı gizlemişse
         if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
-          continue;
+          if (lastMsgTime > lastSeen) {
+            // 📌 Yeni mesaj → geri görünür yap
+            await setDoc(
+              metaRef,
+              {
+                hiddenFor: { [me.uid]: false },
+                lastSeenTime: lastMsgTime,
+              },
+              { merge: true }
+            );
+          } else {
+            // Yeni mesaj yok → gizli kalır
+            continue;
+          }
         }
 
         finalArr.push({
@@ -203,7 +222,7 @@ export default function MessagesPage() {
       }
 
       const docSnap = snap.docs[0];
-      const d: any = docSnap.data();
+      const d = docSnap.data();
 
       setSearchUser({
         uid: docSnap.id,
@@ -211,7 +230,7 @@ export default function MessagesPage() {
         avatar: d.avatar,
         vbId: d.vbId,
       });
-    } catch (e) {
+    } catch {
       setSearchError("Bir hata oluştu");
     } finally {
       setSearchLoading(false);
@@ -314,7 +333,7 @@ export default function MessagesPage() {
         )}
       </ScrollView>
 
-      {/* uzun basma seçenek popupı */}
+      {/* Uzun basma seçenek popupı */}
       {selectedUser && (
         <DmOptionsModal
           visible={optionsOpen}
