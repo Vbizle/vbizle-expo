@@ -161,19 +161,28 @@ export default function MessagesPage() {
         const lastSeen = meta.lastSeenTime ?? 0;
 
         // ❗ Kullanıcı DM’i gizlemişse
-       if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
-  await setDoc(
-    metaRef,
-    {
-      hiddenFor: { [me.uid]: false },
-      lastSeenTime: lastMsgTime || Date.now() / 1000,
-    },
-    { merge: true }
-  );
+        if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
 
-  continue; // Gizli olan zaten listeye eklenmez
+  // mesaja ait zaman
+  const msgTime = item.time?.seconds ?? 0;
+
+  // gizleme zamanı
+  const hiddenAt = meta.hiddenAt ?? 0;
+
+  // yeni mesaj geldi mi?
+  if (msgTime > hiddenAt) {
+    await setDoc(
+      metaRef,
+      {
+        hiddenFor: { [me.uid]: false },
+        lastSeenTime: msgTime,
+      },
+      { merge: true }
+    );
+  }
+
+  continue; // gizliyse listeye eklenmesin
 }
-
         finalArr.push({
           ...item,
           otherName: uData.username,
