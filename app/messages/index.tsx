@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 
 import { auth, db } from "@/firebase/firebaseConfig";
+import { useUi } from "@/src/(providers)/UiProvider";
 
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
@@ -67,6 +68,7 @@ function IdProfilePopup({ user, onClose }) {
 ====================================================== */
 export default function MessagesPage() {
   const router = useRouter();
+  const { activeDM, showToast } = useUi();
 
   const [me, setMe] = useState(null);
   const [list, setList] = useState([]);
@@ -119,7 +121,6 @@ export default function MessagesPage() {
         const other = a === me.uid ? b : b === me.uid ? a : null;
         if (!other) return;
 
-        // ⭐ Mesaj tipini ayır
         let preview = "";
         if (data.text) preview = data.text;
         else if (data.imgUrl) preview = "[Fotoğraf]";
@@ -150,6 +151,19 @@ export default function MessagesPage() {
             ? metaSnap.data().unread[me.uid]
             : 0;
 
+        /* ======================================================
+           🔥 YENİ BİLDİRİM — sadece 1 kere, DM açık değilken
+        ====================================================== */
+        if (unread > 0 && item.otherId !== activeDM) {
+          showToast(
+            JSON.stringify({
+              name: uData.username,
+              avatar: uData.avatar,
+              text: "Sana mesaj gönderdi",
+            })
+          );
+        }
+
         finalArr.push({
           ...item,
           otherName: uData.username,
@@ -166,7 +180,7 @@ export default function MessagesPage() {
     load();
     const unsub = onSnapshot(collectionGroup(db, "meta"), () => load());
     return () => unsub();
-  }, [me]);
+  }, [me, activeDM]);
 
   /* ======================================================
      ID ARAMA
@@ -222,7 +236,6 @@ export default function MessagesPage() {
   ====================================================== */
   return (
     <View style={{ flex: 1, backgroundColor: "#F2F2F5", paddingHorizontal: 14 }}>
-      {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mesajlarım</Text>
 
@@ -260,7 +273,6 @@ export default function MessagesPage() {
         <Text style={styles.searchError}>{searchError}</Text>
       ) : null}
 
-      {/* DM LIST */}
       <ScrollView style={{ marginTop: 10 }}>
         {list.map((m, i) => (
           <TouchableOpacity
@@ -276,7 +288,6 @@ export default function MessagesPage() {
             <View style={{ flex: 1, marginLeft: 6 }}>
               <Text style={styles.name}>{m.otherName}</Text>
 
-              {/* ⭐ Önizleme — Tek satır + "..." */}
               <Text
                 style={styles.lastMsg}
                 numberOfLines={1}
@@ -302,10 +313,7 @@ export default function MessagesPage() {
       </ScrollView>
 
       {searchUser && (
-        <IdProfilePopup
-          user={searchUser}
-          onClose={() => setSearchUser(null)}
-        />
+        <IdProfilePopup user={searchUser} onClose={() => setSearchUser(null)} />
       )}
     </View>
   );
