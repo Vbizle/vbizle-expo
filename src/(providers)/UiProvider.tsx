@@ -19,9 +19,8 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   ========================== */
   const [minimizedRoom, setMinimizedRoom] = useState<any>(null);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [skipNextJoinRoomId, setSkipNextJoinRoomId] = useState<string | null>(
-    null
-  );
+  const [skipNextJoinRoomId, setSkipNextJoinRoomId] =
+    useState<string | null>(null);
 
   useEffect(() => {
     async function loadState() {
@@ -78,12 +77,24 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   // Aynı kişiden art arda popup çıkmasın
   const lastToastFrom = useRef<string | null>(null);
 
+  /** ==========================
+      🔥 DÜZELTİLMİŞ showToast
+  ========================== **/
   function showToast({ uid, avatar, name }) {
+    if (!uid) return;
+
+    // Popup spam olmasın (sadece 1 kez)
     if (lastToastFrom.current === uid) return;
 
     lastToastFrom.current = uid;
 
-    setToastData({ avatar, name });
+    // UID + avatar + name artık garanti
+    setToastData({
+      uid,
+      avatar: avatar || "/user.png",
+      name: name || "Bilinmeyen Kullanıcı",
+    });
+
     toastAnim.setValue(0);
 
     Animated.timing(toastAnim, {
@@ -135,7 +146,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
         // DM sayfası açıksa popup çıkmaz
         if (activeDM === otherId) return;
 
-        // Aynı kullanıcıdan tekrar çıkmasını engelle
+        // Aynı kullanıcı için popup tekrar çıkmasın
         if (lastToastFrom.current === otherId) return;
 
         // Kullanıcı bilgisi
