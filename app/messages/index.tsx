@@ -151,18 +151,8 @@ export default function MessagesPage() {
             ? metaSnap.data().unread[me.uid]
             : 0;
 
-        /* ======================================================
-           🔥 YENİ BİLDİRİM — sadece 1 kere, DM açık değilken
-        ====================================================== */
-       if (unread > 0 && item.otherId !== activeDM) {
-  showToast({
-    uid: item.otherId,
-    name: uData.username,
-    avatar: uData.avatar || "/user.png",
-  });
-}
-
-        finalArr.push({
+      
+            finalArr.push({
           ...item,
           otherName: uData.username,
           otherAvatar: uData.avatar,
