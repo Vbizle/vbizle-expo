@@ -31,13 +31,6 @@ import { useUi } from "@/src/(providers)/UiProvider";
 // 📌 EKLENDİ — uzun basma seçenek modalı
 import DmOptionsModal from "./components/DmOptionsModal";
 
-// 📌 EKLENDİ — DM işlemleri
-import {
-  blockUser,
-  deleteConversation,
-  pinConversation,
-} from "./utils/dmActions";
-
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
 ====================================================== */
@@ -80,19 +73,19 @@ export default function MessagesPage() {
   const router = useRouter();
   const { activeDM } = useUi();
 
-  const [me, setMe] = useState(null);
-  const [list, setList] = useState([]);
+  const [me, setMe] = useState<any>(null);
+  const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchId, setSearchId] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
-  const [searchUser, setSearchUser] = useState(null);
+  const [searchUser, setSearchUser] = useState<any>(null);
 
-  // 📌 EKLENDİ — uzun basma için state
+  // 📌 uzun basma için state
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   /* ======================================================
      KULLANICIYI ÇEK
@@ -124,7 +117,7 @@ export default function MessagesPage() {
       const qRef = query(msgRef, orderBy("time", "desc"));
 
       const snap = await getDocs(qRef);
-      const conversations = {};
+      const conversations: any = {};
 
       snap.forEach((d) => {
         const data = d.data();
@@ -151,17 +144,23 @@ export default function MessagesPage() {
         }
       });
 
-      const finalArr = [];
+      const finalArr: any[] = [];
 
       for (let convId in conversations) {
         const item = conversations[convId];
 
         const userSnap = await getDoc(doc(db, "users", item.otherId));
-        const uData = userSnap.data();
+        const uData: any = userSnap.data();
 
         const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
-        const meta = metaSnap.exists() ? metaSnap.data() : {};
+        const meta: any = metaSnap.exists() ? metaSnap.data() : {};
+
         const unread = meta.unread?.[me.uid] ?? 0;
+
+        // ❗ BU KULLANICI İÇİN SİLİNMİŞSE (hiddenFor), LİSTEYE EKLEME
+        if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
+          continue;
+        }
 
         finalArr.push({
           ...item,
@@ -204,7 +203,7 @@ export default function MessagesPage() {
       }
 
       const docSnap = snap.docs[0];
-      const d = docSnap.data();
+      const d: any = docSnap.data();
 
       setSearchUser({
         uid: docSnap.id,
@@ -212,7 +211,7 @@ export default function MessagesPage() {
         avatar: d.avatar,
         vbId: d.vbId,
       });
-    } catch {
+    } catch (e) {
       setSearchError("Bir hata oluştu");
     } finally {
       setSearchLoading(false);
@@ -291,7 +290,11 @@ export default function MessagesPage() {
             <View style={{ flex: 1, marginLeft: 6 }}>
               <Text style={styles.name}>{m.otherName}</Text>
 
-              <Text style={styles.lastMsg} numberOfLines={1} ellipsizeMode="tail">
+              <Text
+                style={styles.lastMsg}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
                 {m.lastMsg}
               </Text>
             </View>
@@ -306,26 +309,25 @@ export default function MessagesPage() {
           </TouchableOpacity>
         ))}
 
-        {list.length === 0 && <Text style={styles.empty}>Henüz mesaj yok</Text>}
+        {list.length === 0 && (
+          <Text style={styles.empty}>Henüz mesaj yok</Text>
+        )}
       </ScrollView>
 
-      {/* 📌 EKLENDİ — uzun basma seçenek popupı */}
+      {/* uzun basma seçenek popupı */}
       {selectedUser && (
         <DmOptionsModal
           visible={optionsOpen}
           conv={selectedUser}
           onClose={() => setOptionsOpen(false)}
-          onPin={async () => {
-            await pinConversation(me.uid, selectedUser);
-            setOptionsOpen(false);
+          onPin={() => {
+            console.log("Başa sabitle:", selectedUser.convId);
           }}
-          onDelete={async () => {
-            await deleteConversation(me.uid, selectedUser);
-            setOptionsOpen(false);
+          onDelete={() => {
+            console.log("Mesajlaşmayı sil (soft):", selectedUser.convId);
           }}
-          onBlock={async () => {
-            await blockUser(me.uid, selectedUser.otherId);
-            setOptionsOpen(false);
+          onBlock={() => {
+            console.log("Engelle:", selectedUser.otherId);
           }}
         />
       )}
@@ -460,4 +462,50 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
   },
+
+  popupBg: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  popupCard: {
+    backgroundColor: "#FFFFFF",
+    width: 280,
+    padding: 20,
+    borderRadius: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.08)",
+  },
+  popupAvatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 999,
+    marginBottom: 10,
+  },
+  popupId: {
+    color: "#1C1C1E",
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  popupName: { color: "#1C1C1E", fontSize: 20, marginBottom: 14 },
+
+  popupBtn: {
+    backgroundColor: "#2563eb",
+    width: "100%",
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  popupBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
+
+  popupCloseBtn: {
+    backgroundColor: "#dc2626",
+    width: "100%",
+    paddingVertical: 10,
+    borderRadius: 10,
+  },
+  popupCloseText: { color: "#fff", textAlign: "center" },
 });
