@@ -149,6 +149,8 @@ export default function DirectMessagePage() {
 
     const unsub = onSnapshot(refMeta, (snap) => {
       const d = snap.data();
+      if (!d) return;
+
       if (d?.typing) setOtherTyping(!!d.typing[String(uid)]);
       if (d?.seen) setMetaSeen(d.seen);
     });
@@ -177,6 +179,37 @@ export default function DirectMessagePage() {
         { merge: true }
       );
     }, 700);
+  }
+
+  // 🔥 UNREAD’İ ARTIRAN TEK DÜZENLEME!
+  async function increaseUnread() {
+    const metaRef = doc(db, "dm", convId, "meta", "info");
+    const snap = await getDoc(metaRef);
+    const d = snap.data() || {};
+
+    await updateDoc(metaRef, {
+      unread: {
+        [String(uid)]: (d.unread?.[String(uid)] || 0) + 1,
+        [me.uid]: 0,
+      },
+      time: serverTimestamp(),
+      lastSender: me.uid,
+    });
+  }
+
+  async function sendMessage() {
+    if (!newMsg.trim()) return;
+
+    await addDoc(collection(db, "dm", convId, "messages"), {
+      uid: me.uid,
+      text: newMsg,
+      time: serverTimestamp(),
+    });
+
+    await increaseUnread();
+
+    setNewMsg("");
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   }
 
   async function sendImage() {
@@ -224,12 +257,7 @@ export default function DirectMessagePage() {
             time: serverTimestamp(),
           });
 
-          await updateDoc(doc(db, "dm", convId, "meta", "info"), {
-            lastMsg: "[Fotoğraf]",
-            lastSender: me.uid,
-            time: serverTimestamp(),
-            unread: { [String(uid)]: 1, [me.uid]: 0 },
-          });
+          await increaseUnread();
 
           setPendingImage(null);
         }
@@ -255,34 +283,9 @@ export default function DirectMessagePage() {
       time: serverTimestamp(),
     });
 
-    await updateDoc(doc(db, "dm", convId, "meta", "info"), {
-      lastMsg: "[Ses Kaydı]",
-      lastSender: me.uid,
-      time: serverTimestamp(),
-      unread: { [String(uid)]: 1, [me.uid]: 0 },
-    });
+    await increaseUnread();
 
     setRecordingPopup(null);
-  }
-
-  async function sendMessage() {
-    if (!newMsg.trim()) return;
-
-    await addDoc(collection(db, "dm", convId, "messages"), {
-      uid: me.uid,
-      text: newMsg,
-      time: serverTimestamp(),
-    });
-
-    await updateDoc(doc(db, "dm", convId, "meta", "info"), {
-      lastMsg: newMsg,
-      lastSender: me.uid,
-      time: serverTimestamp(),
-      unread: { [String(uid)]: 1, [me.uid]: 0 },
-    });
-
-    setNewMsg("");
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
   }
 
   async function deleteMessage(id: string) {
@@ -328,14 +331,12 @@ export default function DirectMessagePage() {
           setMetaSeen={setMetaSeen}
         />
 
-        {/* SES ÖNİZLEME */}
         <VoicePreviewModal
           data={recordingPopup}
           onCancel={() => setRecordingPopup(null)}
           onSend={handleSendVoice}
         />
 
-        {/* RESİM ÖNİZLEME */}
         {pendingImage && (
           <Modal visible transparent animationType="fade">
             <View style={styles.modalBg}>
@@ -364,7 +365,6 @@ export default function DirectMessagePage() {
           </Modal>
         )}
 
-        {/* FOTO TAM EKRAN */}
         {imageModal && (
           <Modal visible transparent animationType="fade">
             <TouchableOpacity
@@ -450,7 +450,6 @@ export default function DirectMessagePage() {
           })}
         </ScrollView>
 
-        {/* GÖNDERME BARI */}
         <View style={styles.sendBar}>
           <View>
             <TouchableOpacity
@@ -499,8 +498,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F2F2F5",
   },
-
-  /* HEADER */
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -527,10 +524,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 18, color: "#1C1C1E", fontWeight: "600" },
   onlineText: { fontSize: 12, color: "#16A34A" },
   typing: { fontSize: 12, color: "#2563EB" },
-
   msgList: { padding: 10, paddingBottom: 2 },
-
-  /* MESAJ BALONLARI */
   bubble: {
     padding: 10,
     borderRadius: 12,
@@ -538,7 +532,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   bubbleText: { color: "#1C1C1E" },
-
   myBubble: {
     alignSelf: "flex-end",
     backgroundColor: "#88b4dd67",
@@ -549,8 +542,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#E8E8EB",
     borderBottomLeftRadius: 0,
   },
-
-  /* RESİM */
   imgBubble: { marginBottom: 10 },
   msgImg: {
     width: 200,
@@ -559,16 +550,12 @@ const styles = StyleSheet.create({
   },
   right: { alignSelf: "flex-end" },
   left: { alignSelf: "flex-start" },
-
-  /* SEEN */
   seenText: {
     color: "#6E6E73",
     fontSize: 11,
     marginLeft: "auto",
     marginRight: 4,
   },
-
-  /* MODAL */
   modalBg: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -578,7 +565,6 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   modalImg: { width: "90%", height: "90%" },
-
   cancelBtn: {
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -587,7 +573,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   cancelText: { color: "#1C1C1E", fontSize: 15 },
-
   sendImgBtn: {
     paddingVertical: 10,
     paddingHorizontal: 20,
@@ -595,8 +580,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   sendImgText: { color: "#fff", fontSize: 15 },
-
-  /* GÖNDERME BARI */
   sendBar: {
     position: "absolute",
     bottom: 0,
@@ -609,7 +592,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F2F5",
     alignItems: "center",
   },
-
   input: {
     flex: 1,
     height: 36,
@@ -619,7 +601,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 1,
     color: "#1C1C1E",
   },
-
   sendBtn: {
     backgroundColor: "#2563eb",
     paddingHorizontal: 12,
@@ -628,12 +609,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   sendAirplane: {
     color: "#fff",
     fontSize: 10,
   },
-
   hamburgerBtn: {
     width: 42,
     height: 32,
@@ -642,7 +621,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
   popupMenu: {
     position: "absolute",
     bottom: 50,
@@ -655,12 +633,10 @@ const styles = StyleSheet.create({
     borderColor: "rgba(0,0,0,0.06)",
     zIndex: 9999,
   },
-
   popupItem: {
     paddingVertical: 6,
     paddingHorizontal: 8,
   },
-
   popupText: {
     color: "#1C1C1E",
     fontSize: 15,
