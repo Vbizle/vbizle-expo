@@ -45,7 +45,7 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
         paddingVertical: 0,
         paddingHorizontal: 9,
         borderRadius: 50,
-        marginBottom: 11,
+        marginBottom: 14,
         maxWidth: "75%",
 
         flexDirection: "row",
@@ -59,7 +59,7 @@ export default function VoiceMessageBubble({ m, mine, isSeen, isLastMyMessage })
         style={{
           width: 40,
           height: 30,
-          borderRadius: 20,
+          borderRadius: 10,
           justifyContent: "center",
           alignItems: "center",
 
