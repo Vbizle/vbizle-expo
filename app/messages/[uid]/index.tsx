@@ -11,7 +11,7 @@ import {
   Text
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { uploadVoice } from "./utils/uploadVoice";
+import { uploadVoice } from "./(utils)/uploadVoice";
 
 import { auth, db, storage } from "@/firebase/firebaseConfig";
 import {
