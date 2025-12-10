@@ -171,7 +171,7 @@ export default function MessagesPage() {
               },
               { merge: true }
             );
-          } else continue;
+          }
         }
 
         finalArr.push({
