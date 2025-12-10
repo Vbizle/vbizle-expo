@@ -8,11 +8,14 @@ import React, {
 } from "react";
 import { Animated, Image, StyleSheet, Text, View } from "react-native";
 
+import { auth, db } from "@/firebase/firebaseConfig";
+import { collectionGroup, doc, getDoc, onSnapshot } from "firebase/firestore";
+
 const UiContext = createContext<any>(null);
 
 export function UiProvider({ children }: { children: React.ReactNode }) {
   /* ==========================
-     ODA KÜÇÜLTME
+        ODA KÜÇÜLTME
   ========================== */
   const [minimizedRoom, setMinimizedRoom] = useState<any>(null);
   const [isMinimized, setIsMinimized] = useState(false);
@@ -64,7 +67,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   }
 
   /* ==========================
-     DM – BİLDİRİM SİSTEMİ
+        DM – BİLDİRİM SİSTEMİ
   ========================== */
 
   const [activeDM, setActiveDM] = useState<string | null>(null);
@@ -72,11 +75,10 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   const [toastData, setToastData] = useState<any>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
 
-  // ⚡ Aynı kişiden art arda mesaj gelirse popup tekrar çıkmasın
+  // Aynı kişiden art arda popup çıkmasın
   const lastToastFrom = useRef<string | null>(null);
 
   function showToast({ uid, avatar, name }) {
-    // Aynı kişiyse popup tekrar tetiklenmesin
     if (lastToastFrom.current === uid) return;
 
     lastToastFrom.current = uid;
@@ -106,6 +108,53 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     outputRange: [-60, 0],
   });
 
+  /* ============================================================
+      🔥 GLOBAL UNREAD LISTENER – Popup tüm sayfalarda çalışır!
+  ============================================================ */
+  useEffect(() => {
+    if (!auth.currentUser) return;
+    const me = auth.currentUser.uid;
+
+    const unsub = onSnapshot(collectionGroup(db, "meta"), (snap) => {
+      snap.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        const path = docSnap.ref.path; // dm/convId/meta/info
+
+        if (!path.includes("dm/")) return;
+
+        const convId = path.split("/")[1];
+        const [a, b] = convId.split("_");
+        const otherId = a === me ? b : b === me ? a : null;
+        if (!otherId) return;
+
+        if (!data.unread || !data.unread[me]) return;
+
+        const unreadCount = data.unread[me];
+        if (unreadCount <= 0) return;
+
+        // DM sayfası açıksa popup çıkmaz
+        if (activeDM === otherId) return;
+
+        // Aynı kullanıcıdan tekrar çıkmasını engelle
+        if (lastToastFrom.current === otherId) return;
+
+        // Kullanıcı bilgisi
+        getDoc(doc(db, "users", otherId)).then((uSnap) => {
+          if (!uSnap.exists()) return;
+          const u = uSnap.data();
+
+          showToast({
+            uid: otherId,
+            name: u.username,
+            avatar: u.avatar || "/user.png",
+          });
+        });
+      });
+    });
+
+    return () => unsub();
+  }, [activeDM]);
+
   return (
     <UiContext.Provider
       value={{
@@ -134,10 +183,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
             },
           ]}
         >
-          <Image
-            source={{ uri: toastData.avatar }}
-            style={styles.toastAvatar}
-          />
+          <Image source={{ uri: toastData.avatar }} style={styles.toastAvatar} />
 
           <View style={{ flex: 1 }}>
             <Text style={styles.toastName}>{toastData.name}</Text>
