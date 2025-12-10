@@ -1,16 +1,17 @@
 import React, { useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
+  View,
 } from "react-native";
 
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, db } from "@/firebase/firebaseConfig";
-import { setDoc, doc } from "firebase/firestore";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function Register() {
   const router = useRouter();
@@ -22,15 +23,33 @@ export default function Register() {
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
+  // YENİ → Cinsiyet
+  const [gender, setGender] = useState<"male" | "female" | null>(null);
+
+  // YENİ → Doğum Tarihi
+  const [birthday, setBirthday] = useState<Date | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+
+  function calculateAge(date: Date) {
+    const diff = Date.now() - date.getTime();
+    const ageDt = new Date(diff);
+    return Math.abs(ageDt.getUTCFullYear() - 1970);
+  }
+
   // =======================================
   // REGISTER
   // =======================================
   async function handleRegister() {
+    if (!gender) return setError("Lütfen cinsiyet seçiniz.");
+    if (!birthday) return setError("Lütfen doğum tarihi seçiniz.");
+
     setError("");
     setLoading(true);
 
     try {
       const result = await createUserWithEmailAndPassword(auth, email, password);
+
+      const age = calculateAge(birthday);
 
       await setDoc(doc(db, "users", result.user.uid), {
         uid: result.user.uid,
@@ -38,6 +57,11 @@ export default function Register() {
         email,
         avatar: "",
         createdAt: Date.now(),
+
+        // YENİ ALANLAR
+        gender,
+        birthday: birthday.toISOString().split("T")[0],
+        age,
       });
 
       router.push("/profile");
@@ -56,8 +80,8 @@ export default function Register() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <View style={styles.form}>
-
+        <View className="form">
+          {/* Kullanıcı adı */}
           <TextInput
             placeholder="Kullanıcı Adı"
             placeholderTextColor="#bbb"
@@ -66,6 +90,7 @@ export default function Register() {
             style={styles.input}
           />
 
+          {/* Email */}
           <TextInput
             placeholder="E-posta"
             placeholderTextColor="#bbb"
@@ -76,6 +101,7 @@ export default function Register() {
             style={styles.input}
           />
 
+          {/* Şifre */}
           <TextInput
             placeholder="Şifre"
             placeholderTextColor="#bbb"
@@ -85,6 +111,58 @@ export default function Register() {
             style={styles.input}
           />
 
+          {/* YENİ → CİNSİYET */}
+          <Text style={{ color: "#fff", marginTop: 10 }}>Cinsiyet</Text>
+          <View style={{ flexDirection: "row", marginTop: 6, gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => setGender("male")}
+              style={[
+                styles.genderBtn,
+                gender === "male" && styles.genderSelected,
+              ]}
+            >
+              <Text style={styles.genderText}>Erkek ♂</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setGender("female")}
+              style={[
+                styles.genderBtn,
+                gender === "female" && styles.genderSelected,
+              ]}
+            >
+              <Text style={styles.genderText}>Kadın ♀</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* YENİ → DOĞUM TARİHİ */}
+          <Text style={{ color: "#fff", marginTop: 16 }}>Doğum Tarihi</Text>
+
+          <TouchableOpacity
+            onPress={() => setShowPicker(true)}
+            style={styles.dateBtn}
+          >
+            <Text style={{ color: "#fff" }}>
+              {birthday
+                ? birthday.toISOString().split("T")[0]
+                : "Doğum tarihi seç"}
+            </Text>
+          </TouchableOpacity>
+
+          {showPicker && (
+            <DateTimePicker
+              value={birthday || new Date(2000, 0, 1)}
+              mode="date"
+              display="spinner"
+              maximumDate={new Date()}
+              onChange={(event, date) => {
+                setShowPicker(false);
+                if (date) setBirthday(date);
+              }}
+            />
+          )}
+
+          {/* KAYIT BUTONU */}
           <TouchableOpacity
             disabled={loading}
             onPress={handleRegister}
@@ -94,7 +172,6 @@ export default function Register() {
               {loading ? "Kayıt yapılıyor..." : "Kayıt Ol"}
             </Text>
           </TouchableOpacity>
-
         </View>
 
         <Text style={styles.loginText}>
@@ -146,10 +223,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  form: {
-    gap: 12,
-  },
-
   input: {
     padding: 12,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -158,6 +231,30 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     color: "white",
     fontSize: 16,
+  },
+
+  genderBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
+    alignItems: "center",
+  },
+
+  genderSelected: {
+    backgroundColor: "#16a34a",
+  },
+
+  genderText: {
+    color: "white",
+    fontSize: 16,
+  },
+
+  dateBtn: {
+    marginTop: 6,
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
   },
 
   registerBtn: {
