@@ -108,7 +108,7 @@ export default function MessagesPage() {
   }, []);
 
   /* ======================================================
-     DM LİSTESİ + HIDDEN/SILINMIS KISIM
+     DM LİSTESİ + HIDDEN + PIN + GERİ GÖRÜNME
   ====================================================== */
   useEffect(() => {
     if (!me) return;
@@ -133,7 +133,6 @@ export default function MessagesPage() {
         if (data.text) preview = data.text;
         else if (data.imgUrl) preview = "[Fotoğraf]";
         else if (data.voiceUrl) preview = "[Ses Kaydı]";
-        else preview = "";
 
         if (!conversations[convId]) {
           conversations[convId] = {
@@ -147,7 +146,6 @@ export default function MessagesPage() {
 
       const finalArr = [];
 
-      // 🔥 BURASI TAMAMEN DÜZELTİLDİ
       for (let convId in conversations) {
         const item = conversations[convId];
 
@@ -156,17 +154,15 @@ export default function MessagesPage() {
 
         const metaRef = doc(db, "dm", convId, "meta", "info");
         const metaSnap = await getDoc(metaRef);
-
         const meta = metaSnap.exists() ? metaSnap.data() : {};
-        const unread = meta.unread?.[me.uid] ?? 0;
 
+        const unread = meta.unread?.[me.uid] ?? 0;
         const lastMsgTime = item.time?.seconds ?? 0;
         const lastSeen = meta.lastSeenTime ?? 0;
 
-        // ❗ Kullanıcı gizlemişse
+        // ❗ Kullanıcı DM’i gizlemişse
         if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
           if (lastMsgTime > lastSeen) {
-            // 📌 Yeni mesaj → geri görünür yap
             await setDoc(
               metaRef,
               {
@@ -175,10 +171,7 @@ export default function MessagesPage() {
               },
               { merge: true }
             );
-          } else {
-            // Yeni mesaj yok → gizli kalır
-            continue;
-          }
+          } else continue;
         }
 
         finalArr.push({
@@ -187,8 +180,17 @@ export default function MessagesPage() {
           otherAvatar: uData.avatar,
           otherOnline: uData.online ?? false,
           unread,
+          isPinned: meta.pinFor?.[me.uid] === true,
+          pinTime: meta.pinTime ?? 0,
         });
       }
+
+      // 🔥 SABİT DM’LER EN ÜSTE
+      finalArr.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.time.seconds - a.time.seconds;
+      });
 
       setList(finalArr);
       setLoading(false);
@@ -286,9 +288,7 @@ export default function MessagesPage() {
         </View>
       </View>
 
-      {searchError ? (
-        <Text style={styles.searchError}>{searchError}</Text>
-      ) : null}
+      {searchError ? <Text style={styles.searchError}>{searchError}</Text> : null}
 
       <ScrollView style={{ marginTop: 10 }}>
         {list.map((m, i) => (
@@ -301,6 +301,20 @@ export default function MessagesPage() {
               setOptionsOpen(true);
             }}
           >
+            {/* Sabitlenmiş ise küçük pin */}
+            {m.isPinned && (
+              <Text
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  fontSize: 14,
+                }}
+              >
+                📌
+              </Text>
+            )}
+
             <View>
               <Image source={{ uri: m.otherAvatar }} style={styles.avatar} />
               {m.otherOnline && <View style={styles.onlineDot} />}
@@ -328,9 +342,7 @@ export default function MessagesPage() {
           </TouchableOpacity>
         ))}
 
-        {list.length === 0 && (
-          <Text style={styles.empty}>Henüz mesaj yok</Text>
-        )}
+        {list.length === 0 && <Text style={styles.empty}>Henüz mesaj yok</Text>}
       </ScrollView>
 
       {/* Uzun basma seçenek popupı */}
@@ -339,15 +351,9 @@ export default function MessagesPage() {
           visible={optionsOpen}
           conv={selectedUser}
           onClose={() => setOptionsOpen(false)}
-          onPin={() => {
-            console.log("Başa sabitle:", selectedUser.convId);
-          }}
-          onDelete={() => {
-            console.log("Mesajlaşmayı sil (soft):", selectedUser.convId);
-          }}
-          onBlock={() => {
-            console.log("Engelle:", selectedUser.otherId);
-          }}
+          onPin={() => console.log("Başa sabitle:", selectedUser.convId)}
+          onDelete={() => console.log("Mesajlaşmayı sil:", selectedUser.convId)}
+          onBlock={() => console.log("Engelle:", selectedUser.otherId)}
         />
       )}
 
@@ -379,7 +385,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "700",
   },
-
   searchBox: { flexDirection: "row", alignItems: "center" },
   searchInputWrap: {
     flexDirection: "row",
@@ -404,7 +409,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   searchBtnText: { color: "#fff", fontSize: 12 },
-
   searchToggle: {
     width: 32,
     height: 32,
@@ -414,13 +418,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   searchError: {
     color: "#dc2626",
     marginTop: 6,
     marginLeft: 4,
   },
-
   msgItem: {
     backgroundColor: "#bebebe05",
     padding: 4,
@@ -431,7 +433,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
   },
-
   avatar: { width: 54, height: 54, borderRadius: 999 },
   onlineDot: {
     width: 12,
@@ -444,18 +445,15 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
-
   name: {
     fontSize: 18,
     color: "#1C1C1E",
     fontWeight: "600",
   },
-
   lastMsg: {
     color: "#6E6E73",
     marginTop: 2,
   },
-
   unreadBadge: {
     position: "absolute",
     top: 6,
@@ -470,25 +468,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-
   arrow: {
     marginLeft: 6,
     color: "#6E6E73",
   },
-
   empty: {
     color: "#7A7A7E",
     textAlign: "center",
     marginTop: 40,
   },
-
   popupBg: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
-
   popupCard: {
     backgroundColor: "#FFFFFF",
     width: 280,
@@ -510,7 +504,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   popupName: { color: "#1C1C1E", fontSize: 20, marginBottom: 14 },
-
   popupBtn: {
     backgroundColor: "#2563eb",
     width: "100%",
@@ -519,7 +512,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   popupBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
-
   popupCloseBtn: {
     backgroundColor: "#dc2626",
     width: "100%",
