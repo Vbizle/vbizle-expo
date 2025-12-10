@@ -12,6 +12,8 @@ type Props = {
   avatar: string;
   username: string;
   vbId: string;
+  gender?: string;    // ⭐ yeni
+  age?: string | number; // ⭐ yeni
   gallery: string[];
   usernameEdit: boolean;
   savingUsername: boolean;
@@ -27,6 +29,8 @@ export default function ProfileHeader({
   avatar,
   username,
   vbId,
+  gender,
+  age,
   gallery,
   usernameEdit,
   savingUsername,
@@ -39,9 +43,27 @@ export default function ProfileHeader({
 }: Props) {
   const hasGallery = gallery.filter(Boolean).length > 0;
 
+  // --------------------------------------------------------
+  //  BADGE (cinsiyet + yaş)
+  // --------------------------------------------------------
+  const genderSymbol =
+    gender === "male"
+      ? "♂"
+      : gender === "female"
+      ? "♀"
+      : null;
+
+  const badgeColor =
+    gender === "male"
+      ? "#3B82F6" // mavi
+      : gender === "female"
+      ? "#EC4899" // pembe
+      : "#9CA3AF";
+
+  const showBadge = genderSymbol && age;
+
   return (
     <View style={styles.wrapper}>
-
       {/* COVER */}
       <TouchableOpacity
         activeOpacity={0.9}
@@ -87,10 +109,22 @@ export default function ProfileHeader({
       <View style={styles.userInfo}>
         <Text style={styles.vbId}>ID: {vbId}</Text>
 
+        {/* KULLANICI ADI + BADGE */}
         {!usernameEdit ? (
-          <TouchableOpacity onPress={onUsernameClick}>
-            <Text style={styles.username}>{username}</Text>
-          </TouchableOpacity>
+          <View style={styles.usernameRow}>
+            <TouchableOpacity onPress={onUsernameClick}>
+              <Text style={styles.username}>{username}</Text>
+            </TouchableOpacity>
+
+            {showBadge ? (
+              <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+                <Text style={styles.badgeText}>
+                  {genderSymbol}
+                  {age}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         ) : (
           <View style={styles.usernameEditBox}>
             <TextInput
@@ -130,10 +164,10 @@ const styles = StyleSheet.create({
     height: 160,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)", // ⭐ premium light border
+    borderColor: "rgba(0,0,0,0.1)",
     overflow: "hidden",
     marginBottom: 0,
-    backgroundColor: "rgba(255,255,255,0.35)", // ⭐ mat white
+    backgroundColor: "rgba(255,255,255,0.35)",
   },
 
   coverImage: {
@@ -149,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   noCoverText: {
-    color: "#6B7280", // ⭐ premium gri
+    color: "#6B7280",
     fontSize: 12,
   },
 
@@ -159,7 +193,7 @@ const styles = StyleSheet.create({
     right: 8,
     width: 36,
     height: 36,
-    backgroundColor: "rgba(0,0,0,0.08)", // ⭐ soft dark overlay
+    backgroundColor: "rgba(0,0,0,0.08)",
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
@@ -167,7 +201,7 @@ const styles = StyleSheet.create({
 
   coverCameraIcon: {
     fontSize: 18,
-    color: "#1C1C1E", // ⭐ premium koyu gri
+    color: "#1C1C1E",
   },
 
   /* AVATAR */
@@ -180,7 +214,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: 48,
     borderWidth: 3,
-    borderColor: "#F2F2F7", // ⭐ mat white border
+    borderColor: "#F2F2F7",
     resizeMode: "cover",
   },
 
@@ -192,14 +226,33 @@ const styles = StyleSheet.create({
 
   vbId: {
     fontSize: 12,
-    color: "#6B7280", // ⭐ premium gri
+    color: "#6B7280",
+  },
+
+  usernameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
   },
 
   username: {
-    marginTop: 4,
     fontSize: 20,
     fontWeight: "600",
-    color: "#1C1C1E", // ⭐ dark text
+    color: "#1C1C1E",
+  },
+
+  /* BADGE */
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+
+  badgeText: {
+    color: "white",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   usernameEditBox: {
@@ -211,7 +264,7 @@ const styles = StyleSheet.create({
   usernameInput: {
     width: 200,
     padding: 10,
-    backgroundColor: "rgba(0,0,0,0.05)", // ⭐ very soft dark
+    backgroundColor: "rgba(0,0,0,0.05)",
     color: "#1C1C1E",
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.12)",

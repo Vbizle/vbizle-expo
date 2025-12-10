@@ -32,6 +32,9 @@ export default function ProfileScreen() {
   const [gallery, setGallery] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [gender, setGender] = useState("");   // ⭐ eklendi
+  const [age, setAge] = useState("");         // ⭐ eklendi
+
   const [usernameEdit, setUsernameEdit] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -55,10 +58,14 @@ export default function ProfileScreen() {
 
       if (snap.exists()) {
         const d: any = snap.data();
+
         setUsername(d.username || "");
         setAvatar(d.avatar || "");
         setVbId(d.vbId || "");
         setGallery(d.galleryPhotos || []);
+
+        setGender(d.gender || ""); // ⭐ eklendi
+        setAge(d.age || "");       // ⭐ eklendi
       }
 
       setLoading(false);
@@ -201,6 +208,8 @@ export default function ProfileScreen() {
         avatar={avatar}
         username={username}
         vbId={vbId}
+        gender={gender}   // ⭐ eklendi
+        age={age}         // ⭐ eklendi
         gallery={gallery}
         usernameEdit={usernameEdit}
         savingUsername={saving}
@@ -231,7 +240,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7", // ⭐ MAT BEYAZ (iOS premium)
+    backgroundColor: "#F2F2F7",
     paddingTop: 40,
     alignItems: "center",
   },
