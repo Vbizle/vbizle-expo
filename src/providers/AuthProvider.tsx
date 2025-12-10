@@ -1,74 +1,65 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { Alert, AppState } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
+import { Alert, AppState } from "react-native";
 import { auth, db } from "../../firebase/firebaseConfig";
 
 import {
-  doc,
-  updateDoc,
-  serverTimestamp,
-  onSnapshot,
   collectionGroup,
+  doc,
   getDoc,
+  onSnapshot,
   runTransaction,
-  setDoc,
+  serverTimestamp,
+  updateDoc
 } from "firebase/firestore";
 
-import { useVbWallet } from "../../src/(hooks)/useVbWallet"; 
-
+import { useVbWallet } from "../../src/(hooks)/useVbWallet";
 
 // ==========================================================
-// VB-ID (SIRALI ID: VB-1, VB-2, VB-3 ...)
-//
-// EXPO SÜRÜMÜ → tamamen aynı çalışıyor
+//    VB-ID OLUŞTURMA (AYNEN KORUNDU)
 // ==========================================================
 async function ensureSequentialVbId(uid: string) {
   const userRef = doc(db, "users", uid);
   const counterRef = doc(db, "_counters", "vbUserCounter");
 
   const userSnap = await getDoc(userRef);
-
-  // Eğer kullanıcı zaten vbId aldıysa çık
   if (userSnap.exists() && userSnap.data().vbId) return;
 
-  await runTransaction(db, async (transaction) => {
-    let counterSnap = await transaction.get(counterRef);
+  await runTransaction(db, async (tx) => {
+    let counterSnap = await tx.get(counterRef);
 
     if (!counterSnap.exists()) {
-      transaction.set(counterRef, { last: 0 });
-      counterSnap = {
-        exists: () => true,
-        data: () => ({ last: 0 }),
-      };
+      tx.set(counterRef, { last: 0 });
+      counterSnap = { exists: () => true, data: () => ({ last: 0 }) };
     }
 
     const last = counterSnap.data().last ?? 0;
     const next = last + 1;
 
-    transaction.update(counterRef, { last: next });
+    tx.update(counterRef, { last: next });
 
     const vbId = `VB-${next}`;
-    transaction.update(userRef, { vbId });
+    tx.update(userRef, { vbId });
   });
 }
 
-
 // ==========================================================
-//                 AUTH PROVIDER (EXPO VERSION)
+//                    AUTH PROVIDER (DÜZELTİLMİŞ)
 // ==========================================================
 export default function AuthProvider({ children }: any) {
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
 
-  // ========================================================
-  //  LOGIN / LOGOUT
-  // ========================================================
+  // --------------------------------------------------------
+  //  Giriş / Çıkış Dinleme
+  // --------------------------------------------------------
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setFirebaseUser(u);
 
       if (!u) {
+        // Kullanıcı çıkış yaptı
         setMe(null);
         setLoaded(true);
         return;
@@ -76,24 +67,32 @@ export default function AuthProvider({ children }: any) {
 
       const userRef = doc(db, "users", u.uid);
 
+      // Kullanıcı Firestore’da var mı?
+      const snap = await getDoc(userRef);
+
+      // Eğer kullanıcı henüz Firestore’da yoksa (yeni register veya eski data bozuk)
+      if (!snap.exists()) {
+        // me = null → setup ekranına yönlendirilebilir
+        setMe(null);
+        setLoaded(true);
+        return;
+      }
+
       // 1) VB-ID oluştur
       await ensureSequentialVbId(u.uid);
 
-      // 2) Kullanıcı verisini çek
-      const snap = await getDoc(userRef);
       const data = snap.data() || {};
-
-      const avatar =
-        data.avatar && data.avatar !== "" ? data.avatar : "";
 
       setMe({
         uid: u.uid,
         name: data.username,
-        avatar,
+        avatar: data.avatar ?? "",
         vbId: data.vbId,
+        gender: data.gender,
+        birthDate: data.birthDate,
       });
 
-      // 3) Kullanıcı online yap
+      // 2) Kullanıcı online yap
       await updateDoc(userRef, { online: true });
 
       setLoaded(true);
@@ -102,13 +101,9 @@ export default function AuthProvider({ children }: any) {
     return () => unsubscribe();
   }, []);
 
-  // ========================================================
-  //  USER PRESENCE (MOBİL SÜRÜM)
-  //
-  //  AppState ile çalışır:
-  //  aktif → online: true
-  //  arka plan → online: false + lastSeen
-  // ========================================================
+  // --------------------------------------------------------
+  // Online / Offline durumu
+  // --------------------------------------------------------
   useEffect(() => {
     if (!firebaseUser) return;
 
@@ -128,14 +123,14 @@ export default function AuthProvider({ children }: any) {
     return () => sub.remove();
   }, [firebaseUser]);
 
-  // ========================================================
-  // 2) VB CÜZDAN HOOK
-  // ========================================================
+  // --------------------------------------------------------
+  // VB Cüzdan (AYNEN KORUNDU)
+  // --------------------------------------------------------
   useVbWallet(firebaseUser);
 
-  // ========================================================
-  // 3) GLOBAL MESAJ BİLDİRİMLERİ → React Native Alert
-  // ========================================================
+  // --------------------------------------------------------
+  // DM Bildirimleri (AYNEN KORUNDU)
+  // --------------------------------------------------------
   useEffect(() => {
     if (!me) return;
 
@@ -168,6 +163,9 @@ export default function AuthProvider({ children }: any) {
     return () => unsub();
   }, [me]);
 
+  // --------------------------------------------------------
+  // Yükleme bitmeden UI açılmasın
+  // --------------------------------------------------------
   if (!loaded) return null;
 
   return children;
