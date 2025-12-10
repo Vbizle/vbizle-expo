@@ -383,12 +383,12 @@ const styles = StyleSheet.create({
   },
 
   msgItem: {
-    backgroundColor: "#FFFFFF",
-    padding: 12,
+    backgroundColor: "#bebebe05",
+    padding: 4,
     borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 1,
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.06)",
   },
