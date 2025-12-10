@@ -15,45 +15,54 @@ import {
 
 import { useVbWallet } from "../../src/(hooks)/useVbWallet";
 
+
 // ==========================================================
-//    VB-ID OLUŞTURMA (AYNEN KORUNDU)
+// VB-ID (SIRALI ID: VB-1, VB-2, VB-3 ...)
+//
+// EXPO SÜRÜMÜ → tamamen aynı çalışıyor
 // ==========================================================
 async function ensureSequentialVbId(uid: string) {
   const userRef = doc(db, "users", uid);
   const counterRef = doc(db, "_counters", "vbUserCounter");
 
   const userSnap = await getDoc(userRef);
+
+  // Eğer kullanıcı zaten vbId aldıysa çık
   if (userSnap.exists() && userSnap.data().vbId) return;
 
-  await runTransaction(db, async (tx) => {
-    let counterSnap = await tx.get(counterRef);
+  await runTransaction(db, async (transaction) => {
+    let counterSnap = await transaction.get(counterRef);
 
     if (!counterSnap.exists()) {
-      tx.set(counterSnap.ref, { last: 0 });
-      counterSnap = { exists: () => true, data: () => ({ last: 0 }) };
+      transaction.set(counterRef, { last: 0 });
+      counterSnap = {
+        exists: () => true,
+        data: () => ({ last: 0 }),
+      };
     }
 
     const last = counterSnap.data().last ?? 0;
     const next = last + 1;
 
-    tx.update(counterRef, { last: next });
+    transaction.update(counterRef, { last: next });
 
     const vbId = `VB-${next}`;
-    tx.update(userRef, { vbId });
+    transaction.update(userRef, { vbId });
   });
 }
 
+
 // ==========================================================
-//                    AUTH PROVIDER (DÜZELTİLMİŞ)
+//                 AUTH PROVIDER (EXPO VERSION)
 // ==========================================================
 export default function AuthProvider({ children }: any) {
   const [firebaseUser, setFirebaseUser] = useState<any>(null);
   const [me, setMe] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
 
-  // --------------------------------------------------------
-  //  Giriş / Çıkış Dinleme
-  // --------------------------------------------------------
+  // ========================================================
+  //  LOGIN / LOGOUT
+  // ========================================================
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setFirebaseUser(u);
@@ -66,36 +75,24 @@ export default function AuthProvider({ children }: any) {
 
       const userRef = doc(db, "users", u.uid);
 
-      // Firestore kullanıcısı var mı?
-      const snap = await getDoc(userRef);
-
-      if (!snap.exists()) {
-        // ❗ ESKİ HATALI DAVRANIŞ:
-        // setMe(null) → DM listesi bozuluyordu
-        // ❗ YENİ DOĞRU DAVRANIŞ:
-        setMe(undefined);
-        setLoaded(true);
-        return;
-      }
-
-      // VB-ID oluştur
+      // 1) VB-ID oluştur
       await ensureSequentialVbId(u.uid);
 
+      // 2) Kullanıcı verisini çek
+      const snap = await getDoc(userRef);
       const data = snap.data() || {};
 
-      // ✔ ME doğru şekilde oluşturuluyor
-      const finalMe = {
+      const avatar =
+        data.avatar && data.avatar !== "" ? data.avatar : "";
+
+      setMe({
         uid: u.uid,
         name: data.username,
-        avatar: data.avatar ?? "",
+        avatar,
         vbId: data.vbId,
-        gender: data.gender,
-        birthDate: data.birthDate,
-      };
+      });
 
-      setMe(finalMe);
-
-      // Kullanıcı online
+      // 3) Kullanıcı online yap
       await updateDoc(userRef, { online: true });
 
       setLoaded(true);
@@ -104,9 +101,13 @@ export default function AuthProvider({ children }: any) {
     return () => unsubscribe();
   }, []);
 
-  // --------------------------------------------------------
-  // Online / Offline durumu
-  // --------------------------------------------------------
+  // ========================================================
+  //  USER PRESENCE (MOBİL SÜRÜM)
+  //
+  //  AppState ile çalışır:
+  //  aktif → online: true
+  //  arka plan → online: false + lastSeen
+  // ========================================================
   useEffect(() => {
     if (!firebaseUser) return;
 
@@ -126,16 +127,16 @@ export default function AuthProvider({ children }: any) {
     return () => sub.remove();
   }, [firebaseUser]);
 
-  // --------------------------------------------------------
-  // VB Cüzdan
-  // --------------------------------------------------------
+  // ========================================================
+  // 2) VB CÜZDAN HOOK
+  // ========================================================
   useVbWallet(firebaseUser);
 
-  // --------------------------------------------------------
-  // DM Bildirimleri
-  // --------------------------------------------------------
+  // ========================================================
+  // 3) GLOBAL MESAJ BİLDİRİMLERİ → React Native Alert
+  // ========================================================
   useEffect(() => {
-    if (!me || !me.uid) return;
+    if (!me) return;
 
     const unsub = onSnapshot(collectionGroup(db, "meta"), async (snap) => {
       snap.docChanges().forEach(async (change) => {
@@ -164,7 +165,7 @@ export default function AuthProvider({ children }: any) {
     });
 
     return () => unsub();
-  }, [me?.uid]);
+  }, [me]);
 
   if (!loaded) return null;
 
