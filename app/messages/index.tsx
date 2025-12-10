@@ -31,6 +31,13 @@ import { useUi } from "@/src/(providers)/UiProvider";
 // 📌 EKLENDİ — uzun basma seçenek modalı
 import DmOptionsModal from "./components/DmOptionsModal";
 
+// 📌 EKLENDİ — DM işlemleri
+import {
+  blockUser,
+  deleteConversation,
+  pinConversation,
+} from "./utils/dmActions";
+
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
 ====================================================== */
@@ -272,7 +279,6 @@ export default function MessagesPage() {
             style={styles.msgItem}
             onPress={() => router.push(`/messages/${m.otherId}`)}
             onLongPress={() => {
-              // 📌 EKLENDİ — modal tetikleme
               setSelectedUser(m);
               setOptionsOpen(true);
             }}
@@ -285,11 +291,7 @@ export default function MessagesPage() {
             <View style={{ flex: 1, marginLeft: 6 }}>
               <Text style={styles.name}>{m.otherName}</Text>
 
-              <Text
-                style={styles.lastMsg}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
+              <Text style={styles.lastMsg} numberOfLines={1} ellipsizeMode="tail">
                 {m.lastMsg}
               </Text>
             </View>
@@ -311,18 +313,18 @@ export default function MessagesPage() {
       {selectedUser && (
         <DmOptionsModal
           visible={optionsOpen}
-          conv={selectedUser}  // 📌 EKLENDİ — modalın ihtiyaç duyduğu veri
+          conv={selectedUser}
           onClose={() => setOptionsOpen(false)}
-          onPin={() => {
-            console.log("Başa sabitle:", selectedUser);
+          onPin={async () => {
+            await pinConversation(me.uid, selectedUser);
             setOptionsOpen(false);
           }}
-          onDelete={() => {
-            console.log("Mesajlaşmayı sil:", selectedUser);
+          onDelete={async () => {
+            await deleteConversation(me.uid, selectedUser);
             setOptionsOpen(false);
           }}
-          onBlock={() => {
-            console.log("Engelle:", selectedUser);
+          onBlock={async () => {
+            await blockUser(me.uid, selectedUser.otherId);
             setOptionsOpen(false);
           }}
         />

@@ -2,59 +2,67 @@ import { db } from "@/firebase/firebaseConfig";
 import {
     arrayUnion,
     collection,
+    deleteDoc,
     doc,
     getDocs,
+    setDoc,
     updateDoc,
-    writeBatch,
 } from "firebase/firestore";
 
-/* ======================================================
-   🔥 DM SİL — konuşmayı tamamen sil
-====================================================== */
-export async function deleteConversation(convId: string) {
+/* ============================================================
+   📌 1) BAŞA SABİTLE — Kullanıcıya özel pin kaydı tutar
+=============================================================== */
+export async function pinConversation(myUid: string, conv: any) {
   try {
-    const msgsRef = collection(db, "dm", convId, "messages");
-    const snap = await getDocs(msgsRef);
-    const batch = writeBatch(db);
+    const ref = doc(db, "users", myUid, "dmPinned", conv.convId);
 
-    snap.forEach((d) => batch.delete(d.ref));
+    await setDoc(ref, {
+      convId: conv.convId,
+      otherId: conv.otherId,
+      time: Date.now(),
+    });
 
-    batch.delete(doc(db, "dm", convId, "meta", "info"));
-
-    await batch.commit();
-    return true;
+    console.log("🔝 Başa sabitlenen DM:", conv.convId);
   } catch (err) {
-    console.log("DM silme hatası:", err);
-    return false;
+    console.error("Pin error:", err);
   }
 }
 
-/* ======================================================
-   ⭐ DM SABİTLE — pinnedDMs alanına ekle
-====================================================== */
-export async function pinConversation(meId: string, convId: string) {
+/* ============================================================
+   📌 2) MESAJLAŞMAYI SİL — DM mesajlarını tamamen temizler
+=============================================================== */
+export async function deleteConversation(myUid: string, conv: any) {
   try {
-    await updateDoc(doc(db, "users", meId), {
-      pinnedDMs: arrayUnion(convId),
-    });
-    return true;
+    const convRef = collection(db, "dm", conv.convId, "messages");
+    const snap = await getDocs(convRef);
+
+    // DM altındaki tüm mesajları sil
+    for (let d of snap.docs) {
+      await deleteDoc(d.ref);
+    }
+
+    // meta/info belgesini sil
+    await deleteDoc(doc(db, "dm", conv.convId, "meta", "info"));
+
+    console.log("🗑️ DM silindi:", conv.convId);
   } catch (err) {
-    console.log("Sabitlenme hatası:", err);
-    return false;
+    console.error("DM delete error:", err);
   }
 }
 
-/* ======================================================
-   ⛔ ENGELLE — blocked listesine ekle
-====================================================== */
-export async function blockUser(meId: string, otherId: string) {
+/* ============================================================
+   📌 3) ENGELLE — Kullanıcıyı blockedUsers listesine ekler
+=============================================================== */
+export async function blockUser(myUid: string, otherUid: string) {
   try {
-    await updateDoc(doc(db, "users", meId), {
-      blocked: arrayUnion(otherId),
+    const userRef = doc(db, "users", myUid);
+
+    await updateDoc(userRef, {
+      blockedUsers: arrayUnion(otherUid),
     });
-    return true;
+
+    console.log("⛔ Kullanıcı engellendi:", otherUid);
   } catch (err) {
-    console.log("Engelleme hatası:", err);
-    return false;
+    console.error("Block error:", err);
   }
 }
