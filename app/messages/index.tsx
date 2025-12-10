@@ -161,18 +161,18 @@ export default function MessagesPage() {
         const lastSeen = meta.lastSeenTime ?? 0;
 
         // ❗ Kullanıcı DM’i gizlemişse
-        if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
-          if (lastMsgTime > lastSeen) {
-            await setDoc(
-              metaRef,
-              {
-                hiddenFor: { [me.uid]: false },
-                lastSeenTime: lastMsgTime,
-              },
-              { merge: true }
-            );
-          }
-        }
+       if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
+  await setDoc(
+    metaRef,
+    {
+      hiddenFor: { [me.uid]: false },
+      lastSeenTime: lastMsgTime || Date.now() / 1000,
+    },
+    { merge: true }
+  );
+
+  continue; // Gizli olan zaten listeye eklenmez
+}
 
         finalArr.push({
           ...item,
