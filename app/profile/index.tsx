@@ -174,7 +174,7 @@ export default function ProfileScreen() {
   async function logout() {
     clearRoom();
     await auth.signOut();
-    router.replace("/login");
+    router.push("/login");
   }
 
   function showNotice(msg: string) {
