@@ -154,15 +154,13 @@ export default function MessagesPage() {
         /* ======================================================
            🔥 YENİ BİLDİRİM — sadece 1 kere, DM açık değilken
         ====================================================== */
-        if (unread > 0 && item.otherId !== activeDM) {
-          showToast(
-            JSON.stringify({
-              name: uData.username,
-              avatar: uData.avatar,
-              text: "Sana mesaj gönderdi",
-            })
-          );
-        }
+       if (unread > 0 && item.otherId !== activeDM) {
+  showToast({
+    uid: item.otherId,
+    name: uData.username,
+    avatar: uData.avatar || "/user.png",
+  });
+}
 
         finalArr.push({
           ...item,
