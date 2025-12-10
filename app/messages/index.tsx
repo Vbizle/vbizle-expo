@@ -83,7 +83,7 @@ export default function MessagesPage() {
   const [searchError, setSearchError] = useState("");
   const [searchUser, setSearchUser] = useState(null);
 
-  // 📌 EKLENDİ — uzun basma için
+  // 📌 EKLENDİ — uzun basma için state
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -272,6 +272,7 @@ export default function MessagesPage() {
             style={styles.msgItem}
             onPress={() => router.push(`/messages/${m.otherId}`)}
             onLongPress={() => {
+              // 📌 EKLENDİ — modal tetikleme
               setSelectedUser(m);
               setOptionsOpen(true);
             }}
@@ -303,26 +304,25 @@ export default function MessagesPage() {
           </TouchableOpacity>
         ))}
 
-        {list.length === 0 && (
-          <Text style={styles.empty}>Henüz mesaj yok</Text>
-        )}
+        {list.length === 0 && <Text style={styles.empty}>Henüz mesaj yok</Text>}
       </ScrollView>
 
       {/* 📌 EKLENDİ — uzun basma seçenek popupı */}
       {selectedUser && (
         <DmOptionsModal
           visible={optionsOpen}
+          conv={selectedUser}  // 📌 EKLENDİ — modalın ihtiyaç duyduğu veri
           onClose={() => setOptionsOpen(false)}
           onPin={() => {
-            console.log("Başa sabitle:", selectedUser.otherId);
+            console.log("Başa sabitle:", selectedUser);
             setOptionsOpen(false);
           }}
           onDelete={() => {
-            console.log("Mesajlaşmayı sil:", selectedUser.otherId);
+            console.log("Mesajlaşmayı sil:", selectedUser);
             setOptionsOpen(false);
           }}
           onBlock={() => {
-            console.log("Engelle:", selectedUser.otherId);
+            console.log("Engelle:", selectedUser);
             setOptionsOpen(false);
           }}
         />
