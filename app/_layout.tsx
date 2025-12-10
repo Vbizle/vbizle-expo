@@ -1,6 +1,6 @@
 // app/_layout.tsx
 
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Redirect, Slot, useRouter, useSegments } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Platform, StatusBar, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -25,7 +25,6 @@ function LayoutInner() {
   const router = useRouter();
   const segments = useSegments();
 
-  // ⭐ Tema bilgisi
   const { colors, theme } = useTheme();
 
   const [user, setUser] = useState<any>(undefined);
@@ -53,12 +52,19 @@ function LayoutInner() {
     currentRoute.startsWith("/messages/") &&
     currentRoute.split("/").length === 3;
 
+  // ------------------------------------------------------------
+  // ⭐ EN ÖNEMLİ DÜZELTME: AUTH GUARD
+  // ------------------------------------------------------------
+  if (!loading && !user && !isAuthPage) {
+    return <Redirect href="/login" />;
+  }
+
   if (loading) {
     return (
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.backgroundSoft, // ⭐ daha mat bekleme ekranı
+          backgroundColor: colors.backgroundSoft,
           justifyContent: "center",
           alignItems: "center",
         }}
@@ -72,12 +78,12 @@ function LayoutInner() {
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.backgroundSoft }} // ⭐ mat ana arka plan
+      style={{ flex: 1, backgroundColor: colors.backgroundSoft }}
       edges={["left", "right", "bottom"]}
     >
       <StatusBar
         backgroundColor={colors.backgroundSoft}
-        barStyle={theme === "light" ? "dark-content" : "light-content"} // ⭐ DOĞRU BAR
+        barStyle={theme === "light" ? "dark-content" : "light-content"}
       />
 
       {/* HEADER */}
@@ -92,7 +98,7 @@ function LayoutInner() {
             borderColor: colors.border,
             flexDirection: "row",
             justifyContent: "space-between",
-            backgroundColor: colors.backgroundSoft, // ⭐ header = soft
+            backgroundColor: colors.backgroundSoft,
           }}
         >
           <Text
@@ -126,7 +132,7 @@ function LayoutInner() {
       <View
         style={{
           flex: 1,
-          backgroundColor: colors.background, // ⭐ içerik daha beyaz / temiz
+          backgroundColor: colors.background,
         }}
       >
         <Slot />
