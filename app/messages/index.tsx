@@ -78,6 +78,9 @@ export default function MessagesPage() {
   const [searchError, setSearchError] = useState("");
   const [searchUser, setSearchUser] = useState(null);
 
+  /* ======================================================
+     KULLANICIYI ÇEK
+  ====================================================== */
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (u) => {
       if (!u) return router.push("/login");
@@ -94,6 +97,9 @@ export default function MessagesPage() {
     return () => unsub();
   }, []);
 
+  /* ======================================================
+     DM LİSTESİ YÜKLEME
+  ====================================================== */
   useEffect(() => {
     if (!me) return;
 
@@ -102,7 +108,7 @@ export default function MessagesPage() {
       const qRef = query(msgRef, orderBy("time", "desc"));
 
       const snap = await getDocs(qRef);
-      const conversations: any = {};
+      const conversations = {};
 
       snap.forEach((d) => {
         const data = d.data();
@@ -113,17 +119,24 @@ export default function MessagesPage() {
         const other = a === me.uid ? b : b === me.uid ? a : null;
         if (!other) return;
 
+        // ⭐ Mesaj tipini ayır
+        let preview = "";
+        if (data.text) preview = data.text;
+        else if (data.imgUrl) preview = "[Fotoğraf]";
+        else if (data.voiceUrl) preview = "[Ses Kaydı]";
+        else preview = "";
+
         if (!conversations[convId]) {
           conversations[convId] = {
             convId,
             otherId: other,
-            lastMsg: data.text || "[Fotoğraf]",
+            lastMsg: preview,
             time: data.time,
           };
         }
       });
 
-      const finalArr: any[] = [];
+      const finalArr = [];
 
       for (let convId in conversations) {
         const item = conversations[convId];
@@ -132,7 +145,6 @@ export default function MessagesPage() {
         const uData = userSnap.data();
 
         const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
-
         const unread =
           metaSnap.exists() && metaSnap.data().unread?.[me.uid]
             ? metaSnap.data().unread[me.uid]
@@ -156,6 +168,9 @@ export default function MessagesPage() {
     return () => unsub();
   }, [me]);
 
+  /* ======================================================
+     ID ARAMA
+  ====================================================== */
   const handleSearch = async () => {
     setSearchError("");
     setSearchUser(null);
@@ -191,6 +206,9 @@ export default function MessagesPage() {
     }
   };
 
+  /* ======================================================
+     LOADING
+  ====================================================== */
   if (loading || !me) {
     return (
       <View style={styles.center}>
@@ -199,9 +217,11 @@ export default function MessagesPage() {
     );
   }
 
+  /* ======================================================
+     UI
+  ====================================================== */
   return (
     <View style={{ flex: 1, backgroundColor: "#F2F2F5", paddingHorizontal: 14 }}>
-      
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Mesajlarım</Text>
@@ -255,7 +275,15 @@ export default function MessagesPage() {
 
             <View style={{ flex: 1 }}>
               <Text style={styles.name}>{m.otherName}</Text>
-              <Text style={styles.lastMsg}>{m.lastMsg}</Text>
+
+              {/* ⭐ Önizleme — Tek satır + "..." */}
+              <Text
+                style={styles.lastMsg}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {m.lastMsg}
+              </Text>
             </View>
 
             {m.unread > 0 && (
@@ -375,6 +403,7 @@ const styles = StyleSheet.create({
     color: "#1C1C1E",
     fontWeight: "600",
   },
+
   lastMsg: {
     color: "#6E6E73",
     marginTop: 2,
