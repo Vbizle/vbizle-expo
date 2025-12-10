@@ -1,27 +1,25 @@
 // app/profile/index.tsx
 import React, { useEffect, useState } from "react";
-import { 
-  View, 
-  Text, 
-  Image, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ActivityIndicator 
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View
 } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
 
 import { auth, db, storage } from "@/firebase/firebaseConfig";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
-import { useRouter } from "expo-router";
 import { useRoomState } from "@/src/(providers)/RoomProvider";
+import { useRouter } from "expo-router";
 
-import ProfileTopBar from "./ProfileTopBar";
-import ProfileHeader from "./ProfileHeader";
 import CoverEditModal from "./CoverEditModal";
 import FullscreenGallery from "./FullscreenGallery";
+import ProfileHeader from "./ProfileHeader";
+import ProfileTopBar from "./ProfileTopBar";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -70,13 +68,12 @@ export default function ProfileScreen() {
   }, [user]);
 
   // ==========================================================
-  // AVATAR YÜKLEME (Expo versiyonu)
+  // AVATAR YÜKLEME
   // ==========================================================
   async function handleAvatarUpload() {
     if (!user) return;
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      // 🔄 Yeni API — uyarısız
       mediaTypes: ["images"],
       quality: 0.8,
     });
@@ -103,13 +100,12 @@ export default function ProfileScreen() {
   }
 
   // ==========================================================
-  // KAPAK FOTOĞRAF YÜKLEME (Expo versiyonu)
+  // GALERİ YÜKLEME
   // ==========================================================
   async function handleGalleryUpload(index: number) {
     if (!user) return;
 
     const pick = await ImagePicker.launchImageLibraryAsync({
-      // 🔄 Yeni API — uyarısız
       mediaTypes: ["images"],
       quality: 0.8,
     });
@@ -174,7 +170,6 @@ export default function ProfileScreen() {
     router.replace("/login");
   }
 
-  // Bildirim gösterme
   function showNotice(msg: string) {
     setNotice(msg);
     setTimeout(() => setNotice(""), 2000);
@@ -186,7 +181,7 @@ export default function ProfileScreen() {
   if (loading)
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#1C1C1E" />
       </View>
     );
 
@@ -236,7 +231,7 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: "#F2F2F7", // ⭐ MAT BEYAZ (iOS premium)
     paddingTop: 40,
     alignItems: "center",
   },
@@ -244,7 +239,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#000",
+    backgroundColor: "#F2F2F7",
   },
   noticeBox: {
     position: "absolute",
@@ -256,7 +251,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   noticeText: {
-    color: "white",
+    color: "#FFFFFF",
     fontSize: 15,
   },
 });

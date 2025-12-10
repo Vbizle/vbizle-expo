@@ -1,18 +1,18 @@
 import React from "react";
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
   Image,
+  Modal,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
   open: boolean;
   gallery: string[];
   onClose: () => void;
-  onSelectFile: (index: number) => void; // Expo Image Picker ile parent tetikliyor
+  onSelectFile: (index: number) => void;
 };
 
 export default function CoverEditModal({
@@ -25,12 +25,10 @@ export default function CoverEditModal({
 
   return (
     <Modal transparent animationType="fade" visible={open}>
-      {/* Arka plan blur + siyah overlay */}
       <View style={styles.overlay}>
         <View style={styles.modalBox}>
           <Text style={styles.title}>Kapak Fotoğrafları</Text>
 
-          {/* 2x2 grid (aynı webdeki gibi) */}
           <View style={styles.grid}>
             {[0, 1, 2, 3].map((i) => (
               <TouchableOpacity
@@ -48,7 +46,6 @@ export default function CoverEditModal({
             ))}
           </View>
 
-          {/* Kapat butonu */}
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeText}>Kapat</Text>
           </TouchableOpacity>
@@ -61,7 +58,7 @@ export default function CoverEditModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
+    backgroundColor: "rgba(0,0,0,0.25)", // 🔥 Light mode için daha soft blur
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 16,
@@ -70,17 +67,21 @@ const styles = StyleSheet.create({
   modalBox: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "#FFFFFF",            // ⭐ PREMIUM BEYAZ
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(0,0,0,0.08)",        // ⭐ İnce modern border
     padding: 20,
     borderRadius: 16,
+    shadowColor: "#000",                    // ⭐ Hafif gölge
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
 
   title: {
     fontSize: 18,
     fontWeight: "700",
-    color: "white",
+    color: "#1C1C1E",                       // ⭐ Koyu premium text
     marginBottom: 16,
   },
 
@@ -95,8 +96,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderWidth: 1,
     borderStyle: "dashed",
-    borderColor: "rgba(255,255,255,0.4)",
-    backgroundColor: "rgba(0,0,0,0.4)",
+    borderColor: "rgba(0,0,0,0.15)",        // ⭐ Mat gri çizgi
+    backgroundColor: "#F3F4F6",             // ⭐ Soft gri yüzey
     borderRadius: 12,
     marginBottom: 12,
     justifyContent: "center",
@@ -112,20 +113,21 @@ const styles = StyleSheet.create({
 
   plus: {
     fontSize: 32,
-    color: "rgba(255,255,255,0.4)",
+    color: "#9CA3AF",                       // ⭐ Soft gri ikon
   },
 
   closeBtn: {
     marginTop: 16,
     width: "100%",
     paddingVertical: 10,
-    backgroundColor: "#4b5563",
+    backgroundColor: "#E5E7EB",             // ⭐ iOS-style açık gri buton
     borderRadius: 8,
     alignItems: "center",
   },
 
   closeText: {
-    color: "white",
+    color: "#1C1C1E",                        // ⭐ Koyu premium yazı
     fontSize: 16,
+    fontWeight: "600",
   },
 });

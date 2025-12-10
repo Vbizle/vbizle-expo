@@ -84,7 +84,7 @@ export default function DmUserStatusHeader({
           <View
             style={[
               styles.avatar,
-              { backgroundColor: "#E8E8EB" } // 💠 DARK MODE'DAKİ #222 → MAT BEYAZ UYUMLU
+              { backgroundColor: "#E8E8EB" } // 💠 MAT BEYAZ UYUMU
             ]}
           />
         )}
@@ -101,7 +101,7 @@ export default function DmUserStatusHeader({
               ? styles.typing
               : otherUser.online
               ? styles.onlineText
-              : styles.onlineText
+              : { color: "#6E6E73", fontSize: 12 } // ⭐ SADECE SON GÖRÜLME GRİ
           }
         >
           {otherTyping

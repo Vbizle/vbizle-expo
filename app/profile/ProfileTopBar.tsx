@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
+  View,
 } from "react-native";
 
 type Props = {
@@ -19,9 +19,7 @@ export default function ProfileTopBar({ onLogout }: Props) {
       <Text style={styles.title}>Profil</Text>
 
       {/* Menü Butonu */}
-      <TouchableOpacity
-        onPress={() => setMenuOpen((prev) => !prev)}
-      >
+      <TouchableOpacity onPress={() => setMenuOpen((prev) => !prev)}>
         <Text style={styles.menuIcon}>☰</Text>
       </TouchableOpacity>
 
@@ -56,27 +54,34 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "white",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1C1C1E", // ⭐ premium koyu metin
   },
 
   menuIcon: {
-    fontSize: 26,
-    color: "white",
+    fontSize: 28,
+    color: "#1C1C1E", // ⭐ light mod için uygun ikon
   },
 
   dropdown: {
     position: "absolute",
     top: 40,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    backgroundColor: "#FFFFFF", // ⭐ Mat beyaz kutu
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(0,0,0,0.12)", // ⭐ soft light border
     borderRadius: 12,
     padding: 12,
     width: 150,
     zIndex: 50,
+
+    // ⭐ premium floating shadow
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
 
   logoutBtn: {
@@ -84,7 +89,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    color: "#f87171",
+    color: "#DC2626", // ⭐ premium kırmızı
     fontSize: 14,
+    fontWeight: "600",
   },
 });

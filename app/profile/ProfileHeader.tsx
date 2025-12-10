@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  View,
-  Text,
   Image,
-  TouchableOpacity,
-  TextInput,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 type Props = {
@@ -15,7 +15,7 @@ type Props = {
   gallery: string[];
   usernameEdit: boolean;
   savingUsername: boolean;
-  onAvatarChange: () => void;         // Expo Image Picker tetikleyici
+  onAvatarChange: () => void;
   onUsernameClick: () => void;
   onUsernameChange: (val: string) => void;
   onUsernameSave: () => void;
@@ -42,9 +42,7 @@ export default function ProfileHeader({
   return (
     <View style={styles.wrapper}>
 
-      {/* ============================= */}
-      {/* KAPAK FOTOĞRAF BÖLÜMÜ        */}
-      {/* ============================= */}
+      {/* COVER */}
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={onCoverClick}
@@ -58,7 +56,6 @@ export default function ProfileHeader({
           </View>
         )}
 
-        {/* Sağ üst kamera ikonu */}
         <TouchableOpacity
           style={styles.coverCameraBtn}
           onPress={(e) => {
@@ -70,23 +67,23 @@ export default function ProfileHeader({
         </TouchableOpacity>
       </TouchableOpacity>
 
-      {/* ============================= */}
-      {/* AVATAR                        */}
-      {/* ============================= */}
+      {/* AVATAR */}
       <TouchableOpacity
         onPress={onAvatarChange}
         activeOpacity={0.8}
         style={styles.avatarWrapper}
       >
         <Image
-          source={{ uri: avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png" }}
+          source={{
+            uri:
+              avatar ||
+              "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+          }}
           style={styles.avatar}
         />
       </TouchableOpacity>
 
-      {/* ============================= */}
-      {/* USERNAME + ID                 */}
-      {/* ============================= */}
+      {/* USER INFO */}
       <View style={styles.userInfo}>
         <Text style={styles.vbId}>ID: {vbId}</Text>
 
@@ -101,7 +98,7 @@ export default function ProfileHeader({
               onChangeText={onUsernameChange}
               style={styles.usernameInput}
               placeholder="Kullanıcı adı"
-              placeholderTextColor="#aaa"
+              placeholderTextColor="#A1A1AA"
             />
 
             <TouchableOpacity
@@ -127,16 +124,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
 
-  /* Kapak Fotoğrafı */
+  /* COVER */
   coverContainer: {
     width: "100%",
     height: 160,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.15)",
+    borderColor: "rgba(0,0,0,0.1)", // ⭐ premium light border
     overflow: "hidden",
     marginBottom: 0,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "rgba(255,255,255,0.35)", // ⭐ mat white
   },
 
   coverImage: {
@@ -152,7 +149,7 @@ const styles = StyleSheet.create({
   },
 
   noCoverText: {
-    color: "rgba(255,255,255,0.4)",
+    color: "#6B7280", // ⭐ premium gri
     fontSize: 12,
   },
 
@@ -162,7 +159,7 @@ const styles = StyleSheet.create({
     right: 8,
     width: 36,
     height: 36,
-    backgroundColor: "rgba(0,0,0,0.6)",
+    backgroundColor: "rgba(0,0,0,0.08)", // ⭐ soft dark overlay
     borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
@@ -170,10 +167,10 @@ const styles = StyleSheet.create({
 
   coverCameraIcon: {
     fontSize: 18,
-    color: "white",
+    color: "#1C1C1E", // ⭐ premium koyu gri
   },
 
-  /* Avatar */
+  /* AVATAR */
   avatarWrapper: {
     marginTop: -48,
   },
@@ -182,12 +179,12 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    borderWidth: 4,
-    borderColor: "#000",
+    borderWidth: 3,
+    borderColor: "#F2F2F7", // ⭐ mat white border
     resizeMode: "cover",
   },
 
-  /* Username Bölümü */
+  /* USER INFO */
   userInfo: {
     marginTop: 16,
     alignItems: "center",
@@ -195,14 +192,14 @@ const styles = StyleSheet.create({
 
   vbId: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.5)",
+    color: "#6B7280", // ⭐ premium gri
   },
 
   username: {
     marginTop: 4,
     fontSize: 20,
     fontWeight: "600",
-    color: "white",
+    color: "#1C1C1E", // ⭐ dark text
   },
 
   usernameEditBox: {
@@ -214,22 +211,23 @@ const styles = StyleSheet.create({
   usernameInput: {
     width: 200,
     padding: 10,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    color: "white",
+    backgroundColor: "rgba(0,0,0,0.05)", // ⭐ very soft dark
+    color: "#1C1C1E",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "rgba(0,0,0,0.12)",
     borderRadius: 6,
   },
 
   saveBtn: {
-    backgroundColor: "#16a34a",
+    backgroundColor: "#2563EB",
     paddingVertical: 8,
     paddingHorizontal: 20,
     borderRadius: 8,
   },
 
   saveBtnText: {
-    color: "white",
+    color: "#fff",
     fontSize: 14,
+    fontWeight: "600",
   },
 });

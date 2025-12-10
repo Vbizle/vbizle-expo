@@ -1,13 +1,13 @@
 import React from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
+  Dimensions,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
-  Dimensions,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
@@ -27,7 +27,6 @@ export default function FullscreenGallery({ open, gallery, onClose }: Props) {
     <Modal visible={open} transparent animationType="fade">
       <View style={styles.overlay}>
 
-        {/* Scrollable horizontal fullscreens */}
         <ScrollView
           horizontal
           pagingEnabled
@@ -46,7 +45,7 @@ export default function FullscreenGallery({ open, gallery, onClose }: Props) {
           ))}
         </ScrollView>
 
-        {/* Kapatma Butonu */}
+        {/* Close Button */}
         <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
           <Text style={styles.closeText}>✕</Text>
         </TouchableOpacity>
@@ -59,7 +58,7 @@ export default function FullscreenGallery({ open, gallery, onClose }: Props) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.9)",
+    backgroundColor: "rgba(0,0,0,0.25)",  // ⭐ Light tema için premium soft dark overlay
     justifyContent: "center",
     alignItems: "center",
   },
@@ -93,13 +92,18 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "#E5E7EB",  // ⭐ Premium gri buton
     justifyContent: "center",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
   closeText: {
-    color: "white",
-    fontSize: 28,
+    color: "#1C1C1E",  // ⭐ Premium koyu text
+    fontSize: 26,
+    fontWeight: "600",
   },
 });
