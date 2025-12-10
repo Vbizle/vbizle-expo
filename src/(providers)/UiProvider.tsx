@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
   useContext,
@@ -5,15 +6,14 @@ import React, {
   useRef,
   useState,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { View, Text, StyleSheet, Animated } from "react-native";
+import { Animated, Image, StyleSheet, Text, View } from "react-native";
 
 const UiContext = createContext<any>(null);
 
 export function UiProvider({ children }: { children: React.ReactNode }) {
   /* ==========================
-     ODA KÜÇÜLTME SİSTEMİ (MEVCUT)
-     ========================== */
+     ODA KÜÇÜLTME
+  ========================== */
   const [minimizedRoom, setMinimizedRoom] = useState<any>(null);
   const [isMinimized, setIsMinimized] = useState(false);
   const [skipNextJoinRoomId, setSkipNextJoinRoomId] = useState<string | null>(
@@ -44,7 +44,6 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("minimizedRoom", JSON.stringify(data));
     await AsyncStorage.setItem("isMinimized", "true");
 
-    // sadece 1 kere atlanacak
     setSkipNextJoinRoomId(roomId);
   }
 
@@ -65,19 +64,24 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   }
 
   /* ==========================
-     DM – YENİ BİLDİRİM SİSTEMİ
-     ========================== */
+     DM – BİLDİRİM SİSTEMİ
+  ========================== */
 
-  // Hangi DM ekranı açık? (o kişiden gelirse bildirim YOK)
   const [activeDM, setActiveDM] = useState<string | null>(null);
 
-  // Yukarıdan kayan toast mesajı
-  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [toastData, setToastData] = useState<any>(null);
   const toastAnim = useRef(new Animated.Value(0)).current;
 
-  function showToast(message: string) {
-    // Aynı anda bir tane yeter
-    setToastMsg(message);
+  // ⚡ Aynı kişiden art arda mesaj gelirse popup tekrar çıkmasın
+  const lastToastFrom = useRef<string | null>(null);
+
+  function showToast({ uid, avatar, name }) {
+    // Aynı kişiyse popup tekrar tetiklenmesin
+    if (lastToastFrom.current === uid) return;
+
+    lastToastFrom.current = uid;
+
+    setToastData({ avatar, name });
     toastAnim.setValue(0);
 
     Animated.timing(toastAnim, {
@@ -91,20 +95,16 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
           duration: 250,
           useNativeDriver: true,
         }).start(() => {
-          setToastMsg(null);
+          setToastData(null);
         });
-      }, 2000); // 2 sn ekranda kal
+      }, 2200);
     });
   }
 
   const translateY = toastAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [-40, 0], // yukarıdan kayarak gelsin
+    outputRange: [-60, 0],
   });
-
-  /* ==========================
-     PROVIDER RETURN
-     ========================== */
 
   return (
     <UiContext.Provider
@@ -115,26 +115,34 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
         clearRoom,
         consumeSkipNextJoin,
 
-        // Yeni DM özellikleri ↓↓↓
         activeDM,
         setActiveDM,
+
         showToast,
       }}
     >
       {children}
 
-      {/* Yukarıdan kayan toast bildirimi */}
-      {toastMsg && (
+      {/* Premium Toast Bildirimi */}
+      {toastData && (
         <Animated.View
           style={[
-            styles.toast,
+            styles.toastCard,
             {
               opacity: toastAnim,
               transform: [{ translateY }],
             },
           ]}
         >
-          <Text style={styles.toastText}>{toastMsg}</Text>
+          <Image
+            source={{ uri: toastData.avatar }}
+            style={styles.toastAvatar}
+          />
+
+          <View style={{ flex: 1 }}>
+            <Text style={styles.toastName}>{toastData.name}</Text>
+            <Text style={styles.toastMsg}>Sana mesaj gönderdi…</Text>
+          </View>
         </Animated.View>
       )}
     </UiContext.Provider>
@@ -145,21 +153,42 @@ export function useUi() {
   return useContext(UiContext);
 }
 
+/* ==========================
+       STYLES
+========================== */
 const styles = StyleSheet.create({
-  toast: {
+  toastCard: {
     position: "absolute",
-    top: 40,
-    left: 0,
-    right: 0,
+    top: 35,
+    left: 10,
+    right: 10,
+    flexDirection: "row",
     alignItems: "center",
-    zIndex: 2000,
+    backgroundColor: "#FFFFFFEE",
+    padding: 12,
+    borderRadius: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+    zIndex: 3000,
   },
-  toastText: {
-    backgroundColor: "rgba(0,0,0,0.85)",
-    color: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    fontSize: 14,
-    borderRadius: 20,
+
+  toastAvatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 999,
+    marginRight: 10,
+  },
+
+  toastName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1C1C1E",
+  },
+
+  toastMsg: {
+    fontSize: 13,
+    color: "#6E6E73",
   },
 });
