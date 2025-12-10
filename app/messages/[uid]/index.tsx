@@ -3,19 +3,15 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   ScrollView,
   StatusBar,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  Text
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { uploadVoice } from "./utils/uploadVoice";
 
 import { auth, db, storage } from "@/firebase/firebaseConfig";
 import {
@@ -38,13 +34,11 @@ import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 import { useUi } from "../../../src/(providers)/UiProvider";
 
 import DmUserStatusHeader from "./components/DmUserStatusHeader";
-import VoiceRecorder from "./components/VoiceRecorder";
-import VoiceMessageBubble from "./components/VoiceMessageBubble";
 import VoicePreviewModal from "./components/VoicePreviewModal";
 
 // YENİ COMPONENTLER
-import MessagesList from "./components/MessagesList";
 import ImageModals from "./components/ImageModals";
+import MessagesList from "./components/MessagesList";
 import SendBar from "./components/SendBar";
 
 export default function DirectMessagePage() {
@@ -240,7 +234,7 @@ export default function DirectMessagePage() {
     if (!pendingImage || !convId || !me) return;
 
     try {
-      const blob = await (await fetch(pendingPendingImage)).blob();
+      const blob = await (await fetch(pendingImage)).blob();
 
       const imgRef = ref(storage, `dm/${convId}/${Date.now()}.jpg`);
       const uploadTask = uploadBytesResumable(imgRef, blob, {
