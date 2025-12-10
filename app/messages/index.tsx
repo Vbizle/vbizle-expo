@@ -28,6 +28,9 @@ import {
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useUi } from "@/src/(providers)/UiProvider";
 
+// 📌 EKLENDİ — uzun basma seçenek modalı
+import DmOptionsModal from "../components/DmOptionsModal";
+
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
 ====================================================== */
@@ -68,7 +71,7 @@ function IdProfilePopup({ user, onClose }) {
 ====================================================== */
 export default function MessagesPage() {
   const router = useRouter();
-  const { activeDM, showToast } = useUi();
+  const { activeDM } = useUi();
 
   const [me, setMe] = useState(null);
   const [list, setList] = useState([]);
@@ -79,6 +82,10 @@ export default function MessagesPage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [searchUser, setSearchUser] = useState(null);
+
+  // 📌 EKLENDİ — uzun basma için
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   /* ======================================================
      KULLANICIYI ÇEK
@@ -147,10 +154,9 @@ export default function MessagesPage() {
 
         const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
         const meta = metaSnap.exists() ? metaSnap.data() : {};
-const unread = meta.unread?.[me.uid] ?? 0;
+        const unread = meta.unread?.[me.uid] ?? 0;
 
-      
-            finalArr.push({
+        finalArr.push({
           ...item,
           otherName: uData.username,
           otherAvatar: uData.avatar,
@@ -265,6 +271,10 @@ const unread = meta.unread?.[me.uid] ?? 0;
             key={i}
             style={styles.msgItem}
             onPress={() => router.push(`/messages/${m.otherId}`)}
+            onLongPress={() => {
+              setSelectedUser(m);
+              setOptionsOpen(true);
+            }}
           >
             <View>
               <Image source={{ uri: m.otherAvatar }} style={styles.avatar} />
@@ -297,6 +307,26 @@ const unread = meta.unread?.[me.uid] ?? 0;
           <Text style={styles.empty}>Henüz mesaj yok</Text>
         )}
       </ScrollView>
+
+      {/* 📌 EKLENDİ — uzun basma seçenek popupı */}
+      {selectedUser && (
+        <DmOptionsModal
+          visible={optionsOpen}
+          onClose={() => setOptionsOpen(false)}
+          onPin={() => {
+            console.log("Başa sabitle:", selectedUser.otherId);
+            setOptionsOpen(false);
+          }}
+          onDelete={() => {
+            console.log("Mesajlaşmayı sil:", selectedUser.otherId);
+            setOptionsOpen(false);
+          }}
+          onBlock={() => {
+            console.log("Engelle:", selectedUser.otherId);
+            setOptionsOpen(false);
+          }}
+        />
+      )}
 
       {searchUser && (
         <IdProfilePopup user={searchUser} onClose={() => setSearchUser(null)} />
@@ -428,50 +458,4 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
   },
-
-  popupBg: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  popupCard: {
-    backgroundColor: "#FFFFFF",
-    width: 280,
-    padding: 20,
-    borderRadius: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
-  popupAvatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 999,
-    marginBottom: 10,
-  },
-  popupId: {
-    color: "#1C1C1E",
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  popupName: { color: "#1C1C1E", fontSize: 20, marginBottom: 14 },
-
-  popupBtn: {
-    backgroundColor: "#2563eb",
-    width: "100%",
-    paddingVertical: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  popupBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
-
-  popupCloseBtn: {
-    backgroundColor: "#dc2626",
-    width: "100%",
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  popupCloseText: { color: "#fff", textAlign: "center" },
 });
