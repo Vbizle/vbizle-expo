@@ -36,13 +36,16 @@ import * as ImagePicker from "expo-image-picker";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 
 import { useUi } from "../../../src/(providers)/UiProvider";
+
 import DmUserStatusHeader from "./components/DmUserStatusHeader";
-
 import VoiceRecorder from "./components/VoiceRecorder";
-import { uploadVoice } from "./utils/uploadVoice";
-
 import VoiceMessageBubble from "./components/VoiceMessageBubble";
 import VoicePreviewModal from "./components/VoicePreviewModal";
+
+// YENİ COMPONENTLER
+import MessagesList from "./components/MessagesList";
+import ImageModals from "./components/ImageModals";
+import SendBar from "./components/SendBar";
 
 export default function DirectMessagePage() {
   const router = useRouter();
@@ -182,7 +185,6 @@ export default function DirectMessagePage() {
     }, 700);
   }
 
-  // 🔥 UNREAD’İ ARTIRAN TEK DÜZENLEME!
   async function increaseUnread() {
     const metaRef = doc(db, "dm", convId, "meta", "info");
     const snap = await getDoc(metaRef);
@@ -238,7 +240,7 @@ export default function DirectMessagePage() {
     if (!pendingImage || !convId || !me) return;
 
     try {
-      const blob = await (await fetch(pendingImage)).blob();
+      const blob = await (await fetch(pendingPendingImage)).blob();
 
       const imgRef = ref(storage, `dm/${convId}/${Date.now()}.jpg`);
       const uploadTask = uploadBytesResumable(imgRef, blob, {
@@ -321,6 +323,7 @@ export default function DirectMessagePage() {
       <SafeAreaView style={styles.container}>
         <StatusBar backgroundColor="#F2F2F5" barStyle="dark-content" />
 
+        {/* HEADER */}
         <DmUserStatusHeader
           styles={styles}
           router={router}
@@ -332,160 +335,48 @@ export default function DirectMessagePage() {
           setMetaSeen={setMetaSeen}
         />
 
+        {/* SES ÖNİZLEME MODALI */}
         <VoicePreviewModal
           data={recordingPopup}
           onCancel={() => setRecordingPopup(null)}
           onSend={handleSendVoice}
         />
 
-        {pendingImage && (
-          <Modal visible transparent animationType="fade">
-            <View style={styles.modalBg}>
-              <Image
-                source={{ uri: pendingImage }}
-                resizeMode="contain"
-                style={styles.modalImg}
-              />
+        {/* RESİM MODALLARI */}
+        <ImageModals
+          pendingImage={pendingImage}
+          setPendingImage={setPendingImage}
+          uploadPendingImage={uploadPendingImage}
+          imageModal={imageModal}
+          setImageModal={setImageModal}
+          styles={styles}
+        />
 
-              <View style={{ flexDirection: "row", marginTop: 20 }}>
-                <TouchableOpacity
-                  onPress={() => setPendingImage(null)}
-                  style={styles.cancelBtn}
-                >
-                  <Text style={styles.cancelText}>İptal</Text>
-                </TouchableOpacity>
+        {/* MESAJ LİSTESİ */}
+        <MessagesList
+          messages={messages}
+          me={me}
+          otherUser={otherUser}
+          metaSeen={metaSeen}
+          lastMyMessageId={lastMyMessageId}
+          deleteMessage={deleteMessage}
+          setImageModal={setImageModal}
+          scrollRef={scrollRef}
+          styles={styles}
+        />
 
-                <TouchableOpacity
-                  onPress={uploadPendingImage}
-                  style={styles.sendImgBtn}
-                >
-                  <Text style={styles.sendImgText}>Gönder</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        )}
-
-        {imageModal && (
-          <Modal visible transparent animationType="fade">
-            <TouchableOpacity
-              style={styles.modalBg}
-              onPress={() => setImageModal(null)}
-            >
-              <Image
-                source={{ uri: imageModal }}
-                resizeMode="contain"
-                style={styles.modalImg}
-              />
-            </TouchableOpacity>
-          </Modal>
-        )}
-
-        <ScrollView
-          ref={scrollRef}
-          contentContainerStyle={styles.msgList}
-          keyboardShouldPersistTaps="handled"
-          onContentSizeChange={() =>
-            scrollRef.current?.scrollToEnd({ animated: true })
-          }
-        >
-          {messages.map((m) => {
-            const mine = m.uid === me.uid;
-
-            const seenInfo = metaSeen && metaSeen[otherUser.uid];
-            const lastSeenTime = seenInfo?.lastSeenTime;
-            const msgTime =
-              m.time && m.time.toMillis ? m.time.toMillis() : 0;
-
-            const isSeen =
-              mine &&
-              !!lastSeenTime &&
-              !!msgTime &&
-              msgTime <= lastSeenTime;
-
-            if (m.voiceUrl)
-              return (
-                <VoiceMessageBubble
-                  key={m.id}
-                  m={m}
-                  mine={mine}
-                  isSeen={isSeen}
-                  isLastMyMessage={m.id === lastMyMessageId}
-                />
-              );
-
-            if (m.imgUrl)
-              return (
-                <View key={m.id} style={{ marginBottom: 8 }}>
-                  <TouchableOpacity
-                    onPress={() => setImageModal(m.imgUrl)}
-                    onLongPress={() => mine && deleteMessage(m.id)}
-                    style={[styles.imgBubble, mine ? styles.right : styles.left]}
-                  >
-                    <Image source={{ uri: m.imgUrl }} style={styles.msgImg} />
-                  </TouchableOpacity>
-
-                  {mine && m.id === lastMyMessageId && (
-                    <Text style={styles.seenText}>{isSeen ? "Görüldü" : ""}</Text>
-                  )}
-                </View>
-              );
-
-            return (
-              <View key={m.id} style={{ marginBottom: 8 }}>
-                <TouchableOpacity
-                  onLongPress={() => mine && deleteMessage(m.id)}
-                  style={[
-                    styles.bubble,
-                    mine ? styles.myBubble : styles.otherBubble,
-                  ]}
-                >
-                  <Text style={styles.bubbleText}>{m.text}</Text>
-                </TouchableOpacity>
-
-                {mine && m.id === lastMyMessageId && (
-                  <Text style={styles.seenText}>{isSeen ? "Görüldü" : ""}</Text>
-                )}
-              </View>
-            );
-          })}
-        </ScrollView>
-
-        <View style={styles.sendBar}>
-          <View>
-            <TouchableOpacity
-              onPress={() => setMenuOpen(!menuOpen)}
-              style={styles.hamburgerBtn}
-            >
-              <Text style={{ color: "#1C1C1E", fontSize: 22 }}>☰</Text>
-            </TouchableOpacity>
-
-            {menuOpen && (
-              <View style={styles.popupMenu}>
-                <TouchableOpacity onPress={sendImage} style={styles.popupItem}>
-                  <Text style={styles.popupText}>🖼️ Resim Gönder</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <VoiceRecorder onFinish={onFinishVoice} />
-
-          <TextInput
-            style={styles.input}
-            value={newMsg}
-            onChangeText={(t) => {
-              setNewMsg(t);
-              handleTyping();
-            }}
-            placeholder="Mesaj yaz..."
-            placeholderTextColor="#9A9A9E"
-          />
-
-          <TouchableOpacity onPress={sendMessage} style={styles.sendBtn}>
-            <Text style={styles.sendAirplane}>➤</Text>
-          </TouchableOpacity>
-        </View>
+        {/* ALT SEND BAR */}
+        <SendBar
+          newMsg={newMsg}
+          setNewMsg={setNewMsg}
+          menuOpen={menuOpen}
+          setMenuOpen={setMenuOpen}
+          sendMessage={sendMessage}
+          sendImage={sendImage}
+          handleTyping={handleTyping}
+          onFinishVoice={onFinishVoice}
+          styles={styles}
+        />
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
