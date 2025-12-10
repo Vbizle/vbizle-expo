@@ -146,10 +146,8 @@ export default function MessagesPage() {
         const uData = userSnap.data();
 
         const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
-        const unread =
-          metaSnap.exists() && metaSnap.data().unread?.[me.uid]
-            ? metaSnap.data().unread[me.uid]
-            : 0;
+        const meta = metaSnap.exists() ? metaSnap.data() : {};
+const unread = meta.unread?.[me.uid] ?? 0;
 
       
             finalArr.push({
