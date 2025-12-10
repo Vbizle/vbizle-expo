@@ -273,7 +273,7 @@ export default function MessagesPage() {
               {m.otherOnline && <View style={styles.onlineDot} />}
             </View>
 
-            <View style={{ flex: 1 }}>
+            <View style={{ flex: 1, marginLeft: 6 }}>
               <Text style={styles.name}>{m.otherName}</Text>
 
               {/* ⭐ Önizleme — Tek satır + "..." */}
