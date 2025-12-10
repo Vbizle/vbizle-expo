@@ -1,4 +1,4 @@
-// TEST123
+// test auto push disabled
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
