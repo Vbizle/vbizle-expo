@@ -30,26 +30,27 @@ export default function DmOptionsModal({
 }: Props) {
   if (!visible || !conv) return null;
 
+  // ------------------------
+  // 📌 PIN — SABİTLEME
+  // ------------------------
   const handlePin = async () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
 
-      // İstersen burada pin koleksiyonunu kullanıyorsun (önceki mantık)
-      const ref = doc(db, "dmPins", user.uid, "list", conv.convId);
+      const metaRef = doc(db, "dm", conv.convId, "meta", "info");
+
       await setDoc(
-        ref,
+        metaRef,
         {
-          convId: conv.convId,
-          otherId: conv.otherId,
-          otherName: conv.otherName,
-          otherAvatar: conv.otherAvatar,
-          pinTime: Date.now(),
+          pinFor: {
+            [user.uid]: true,
+          },
         },
         { merge: true }
       );
 
-      console.log("📌 DM pinned:", conv.convId);
+      console.log("📌 DM sabitlendi:", conv.convId);
       onPin && onPin();
     } catch (e) {
       console.log("Pin error:", e);
@@ -58,12 +59,14 @@ export default function DmOptionsModal({
     }
   };
 
+  // ------------------------
+  // 🗑️ SOFT DELETE — GİZLEME
+  // ------------------------
   const handleDelete = async () => {
     try {
       const user = auth.currentUser;
       if (!user) return;
 
-      // ❗ ARTIK TAMAMIYLA SİLMEK YERİNE SADECE BU KULLANICI İÇİN GİZLİYORUZ
       const metaRef = doc(db, "dm", conv.convId, "meta", "info");
 
       await setDoc(
@@ -85,6 +88,9 @@ export default function DmOptionsModal({
     }
   };
 
+  // ------------------------
+  // 🚫 BLOCK — ENGELLEME
+  // ------------------------
   const handleBlock = async () => {
     try {
       const user = auth.currentUser;
@@ -113,6 +119,7 @@ export default function DmOptionsModal({
     <Modal visible={visible} transparent animationType="fade">
       <View style={styles.bg}>
         <View style={styles.card}>
+
           <TouchableOpacity style={styles.item} onPress={handlePin}>
             <Text style={styles.itemText}>Başa sabitle</Text>
           </TouchableOpacity>
@@ -130,6 +137,7 @@ export default function DmOptionsModal({
           <TouchableOpacity style={styles.cancel} onPress={onClose}>
             <Text style={styles.cancelText}>İptal</Text>
           </TouchableOpacity>
+
         </View>
       </View>
     </Modal>
