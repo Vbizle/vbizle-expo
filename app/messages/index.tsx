@@ -29,7 +29,7 @@ import { auth, db } from "@/firebase/firebaseConfig";
 import { useUi } from "@/src/(providers)/UiProvider";
 
 // 📌 EKLENDİ — uzun basma seçenek modalı
-import DmOptionsModal from "../components/DmOptionsModal";
+import DmOptionsModal from "./components/DmOptionsModal";
 
 /* ======================================================
    PROFIL POPUP — Expo Versiyonu
