@@ -4,13 +4,14 @@ import {
   ActivityIndicator,
   StyleSheet,
   Text,
-  View
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import * as ImagePicker from "expo-image-picker";
 
 import { auth, db, storage } from "@/firebase/firebaseConfig";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { useRoomState } from "@/src/(providers)/RoomProvider";
@@ -20,6 +21,13 @@ import CoverEditModal from "./CoverEditModal";
 import FullscreenGallery from "./FullscreenGallery";
 import ProfileHeader from "./ProfileHeader";
 import ProfileTopBar from "./ProfileTopBar";
+
+import ProfileWalletButtons from "./components/ProfileWalletButtons";
+
+import { getLevelInfo } from "@/src/utils/levelSystem";
+
+// Admin kontrolü
+import { isAdmin } from "@/app/admin/core/isAdmin";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -32,8 +40,12 @@ export default function ProfileScreen() {
   const [gallery, setGallery] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [gender, setGender] = useState("");   // ⭐ eklendi
-  const [age, setAge] = useState("");         // ⭐ eklendi
+  const [gender, setGender] = useState("");
+  const [age, setAge] = useState("");
+  const [nationality, setNationality] = useState(null);
+
+  const [vipScore, setVipScore] = useState(0);
+  const [vbTotalSent, setVbTotalSent] = useState(0);
 
   const [usernameEdit, setUsernameEdit] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -43,8 +55,11 @@ export default function ProfileScreen() {
   const [coverEditOpen, setCoverEditOpen] = useState(false);
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
 
+  // ⭐ EKLENDİ — BAYİ FLAG
+  const [isDealerFlag, setIsDealerFlag] = useState(false);
+
   // ==========================================================
-  // PROFİLİ YÜKLE
+  // PROFİL YÜKLE
   // ==========================================================
   useEffect(() => {
     if (!user) {
@@ -63,9 +78,27 @@ export default function ProfileScreen() {
         setAvatar(d.avatar || "");
         setVbId(d.vbId || "");
         setGallery(d.galleryPhotos || []);
+        setGender(d.gender || "");
+        setAge(d.age || "");
+        setNationality(d.nationality || null);
 
-        setGender(d.gender || ""); // ⭐ eklendi
-        setAge(d.age || "");       // ⭐ eklendi
+        setVipScore(d.vipScore ?? 0);
+        setVbTotalSent(d.vbTotalSent ?? 0);
+
+        // ⭐ BAYİ kontrolü
+        setIsDealerFlag(d.isDealer === true);
+      } else {
+        await setDoc(
+          refDoc,
+          {
+            vipScore: 0,
+            vbTotalSent: 0,
+          },
+          { merge: true }
+        );
+
+        setVipScore(0);
+        setVbTotalSent(0);
       }
 
       setLoading(false);
@@ -94,14 +127,13 @@ export default function ProfileScreen() {
 
       const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}.jpg`);
       await uploadBytes(storageRef, blob);
+
       const url = await getDownloadURL(storageRef);
-
       await updateDoc(doc(db, "users", user.uid), { avatar: url });
-      setAvatar(url);
 
+      setAvatar(url);
       showNotice("Profil fotoğrafı güncellendi!");
     } catch (err) {
-      console.error(err);
       showNotice("Avatar yükleme hatası!");
     }
   }
@@ -128,8 +160,8 @@ export default function ProfileScreen() {
       await uploadBytes(storageRef, blob);
 
       const url = await getDownloadURL(storageRef);
-
       const updated = [...gallery];
+
       updated[index] = url;
 
       await updateDoc(doc(db, "users", user.uid), {
@@ -138,8 +170,7 @@ export default function ProfileScreen() {
 
       setGallery(updated);
       showNotice("Kapak fotoğrafı güncellendi!");
-    } catch (err) {
-      console.error(err);
+    } catch {
       showNotice("Kapak yüklenirken hata oluştu!");
     }
   }
@@ -158,11 +189,10 @@ export default function ProfileScreen() {
         updatedAt: Date.now(),
       });
 
-      showNotice("Kullanıcı adı güncellendi!");
       setUsernameEdit(false);
-    } catch (err) {
-      console.error(err);
-      showNotice("Kullanıcı adı güncellenirken hata oluştu.");
+      showNotice("Kullanıcı adı güncellendi!");
+    } catch {
+      showNotice("Kullanıcı adı güncellenirken hata oldu.");
     } finally {
       setSaving(false);
     }
@@ -182,9 +212,6 @@ export default function ProfileScreen() {
     setTimeout(() => setNotice(""), 2000);
   }
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
   if (loading)
     return (
       <View style={styles.center}>
@@ -193,7 +220,11 @@ export default function ProfileScreen() {
     );
 
   const hasGallery = gallery.filter(Boolean).length > 0;
+  const levelInfo = getLevelInfo(vbTotalSent);
 
+  // ==========================================================
+  // RENDER
+  // ==========================================================
   return (
     <View style={styles.container}>
       {notice ? (
@@ -208,8 +239,9 @@ export default function ProfileScreen() {
         avatar={avatar}
         username={username}
         vbId={vbId}
-        gender={gender}   // ⭐ eklendi
-        age={age}         // ⭐ eklendi
+        gender={gender}
+        age={age}
+        nationality={nationality}
         gallery={gallery}
         usernameEdit={usernameEdit}
         savingUsername={saving}
@@ -219,7 +251,31 @@ export default function ProfileScreen() {
         onUsernameSave={saveUsername}
         onCoverClick={() => hasGallery && setFullScreenOpen(true)}
         onOpenCoverEdit={() => setCoverEditOpen(true)}
+        vipScore={vipScore}
+        levelInfo={levelInfo}
       />
+
+      {/* ⭐ Admin Paneli */}
+      {isAdmin(vbId) && (
+        <TouchableOpacity
+          onPress={() => router.push("/admin")}
+          style={styles.adminBtn}
+        >
+          <Text style={styles.adminBtnText}>Admin Paneli</Text>
+        </TouchableOpacity>
+      )}
+
+      {/* ⭐ Yeni: Bayi Paneli */}
+      {isDealerFlag && (
+        <TouchableOpacity
+          onPress={() => router.push("/dealer")}
+          style={styles.dealerBtn}
+        >
+          <Text style={styles.dealerBtnText}>VbBayim</Text>
+        </TouchableOpacity>
+      )}
+
+      <ProfileWalletButtons />
 
       <CoverEditModal
         open={coverEditOpen}
@@ -262,5 +318,33 @@ const styles = StyleSheet.create({
   noticeText: {
     color: "#FFFFFF",
     fontSize: 15,
+  },
+
+  // Admin butonu
+  adminBtn: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: "#1e3a8a",
+    borderRadius: 10,
+  },
+  adminBtnText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  // Bayi butonu
+  dealerBtn: {
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: "#7c3aed",
+    borderRadius: 10,
+  },
+  dealerBtnText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

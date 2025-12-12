@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  StyleSheet,
   Text,
   TouchableOpacity,
-  StyleSheet,
+  View,
 } from "react-native";
-import { db, auth } from "@/firebase/firebaseConfig";
-import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
+
+import { auth, db } from "@/firebase/firebaseConfig";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+
 import SendVbModal from "@/app/components/SendVbModal";
 import { useVbWallet } from "@/src/(hooks)/useVbWallet";
+import { walletEngine } from "@/src/services/walletEngine";
 
 type Props = {
   roomId: string;
@@ -26,23 +29,20 @@ export default function DonationBar({ roomId }: Props) {
 
   const isOwner = user && state?.ownerId === user.uid;
 
-  // 🔥 Firestore oda state dinleme
+  // Oda state dinleyici
   useEffect(() => {
     const ref = doc(db, "rooms", roomId);
-
     const unsub = onSnapshot(ref, (snap) => {
       setState(snap.exists() ? snap.data() : null);
       setLoading(false);
     });
-
     return () => unsub();
   }, [roomId]);
 
-  // 🔥 Owner profilini çek
+  // Oda sahibini yükle
   useEffect(() => {
     async function loadOwner() {
       if (!state?.ownerId) return;
-
       const ref = doc(db, "users", state.ownerId);
       const snap = await getDoc(ref);
       if (snap.exists()) setOwnerProfile(snap.data());
@@ -59,17 +59,19 @@ export default function DonationBar({ roomId }: Props) {
 
   const progress = Math.min(100, (current / target) * 100 || 0);
 
+  // Oda sahibi bağış barını aç/kapat (güvenli engine versiyonu)
   async function handleToggleBar() {
-    if (!isOwner) return;
-    await updateDoc(doc(db, "rooms", roomId), {
-      donationBarEnabled: !state.donationBarEnabled,
-    });
+    if (!isOwner || !user) return;
+    try {
+      await walletEngine.toggleDonationBar(roomId, user.uid);
+    } catch (err) {
+      console.log("Donation toggle error:", err);
+    }
   }
 
   return (
     <View style={styles.wrapper}>
-
-      {/* ÜST SATIR */}
+      {/* Üst Satır */}
       <View style={styles.topRow}>
         <Text style={styles.title}>🎁 {title}</Text>
 
@@ -85,22 +87,19 @@ export default function DonationBar({ roomId }: Props) {
         )}
       </View>
 
-      {/* DONATION BAR */}
+      {/* Bağış Barı */}
       {state.donationBarEnabled && (
         <>
-          {/* BAR ARKA PLAN */}
           <View style={styles.barBg}>
             <View
               style={[
                 styles.barFill,
-                {
-                  width: `${progress}%`,
-                },
+                { width: `${progress}%` },
               ]}
             />
           </View>
 
-          {/* ALT BİLGİ */}
+          {/* Alt Bilgi */}
           <View style={styles.bottomRow}>
             <Text style={styles.currentText}>
               {current} / {target} Vb
@@ -116,7 +115,7 @@ export default function DonationBar({ roomId }: Props) {
         </>
       )}
 
-      {/* SEND VB MODAL */}
+      {/* SendVbModal */}
       {showSend && (
         <SendVbModal
           visible={showSend}
@@ -141,20 +140,17 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     backgroundColor: "rgba(0,0,0,0.3)",
   },
-
   topRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 4,
     alignItems: "center",
   },
-
   title: {
     fontSize: 14,
     color: "#d8b4fe",
     fontWeight: "600",
   },
-
   toggleBtn: {
     paddingHorizontal: 8,
     paddingVertical: 3,
@@ -165,8 +161,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 12,
   },
-
-  /* Donation bar */
   barBg: {
     width: "100%",
     height: 10,
@@ -175,24 +169,21 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.1)",
     marginBottom: 6,
   },
-
   barFill: {
     height: "100%",
     borderRadius: 999,
-    backgroundColor: "linear-gradient(90deg, #ff8a00, #ffc252, #008cff, #003c99, #7d003f, #ff005e)",
+    backgroundColor:
+      "linear-gradient(90deg, #ff8a00, #ffc252, #008cff, #003c99, #7d003f, #ff005e)",
   },
-
   bottomRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-
   currentText: {
     fontSize: 13,
     color: "#d1d5db",
   },
-
   donateBtn: {
     backgroundColor: "#7c3aed",
     paddingHorizontal: 12,

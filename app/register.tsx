@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import {
+  Alert,
+  Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -23,10 +26,23 @@ export default function Register() {
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
 
-  // YENİ → Cinsiyet
+  // Cinsiyet
   const [gender, setGender] = useState<"male" | "female" | null>(null);
+  const [genderWarningShown, setGenderWarningShown] = useState(false);
 
-  // YENİ → Doğum Tarihi
+  function selectGender(type: "male" | "female") {
+    setGender(type);
+
+    if (!genderWarningShown) {
+      Alert.alert(
+        "Bilgi",
+        "Cinsiyet seçimi bazı kısımlarda değiştirilemeyebilir."
+      );
+      setGenderWarningShown(true);
+    }
+  }
+
+  // Doğum tarihi
   const [birthday, setBirthday] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -36,12 +52,25 @@ export default function Register() {
     return Math.abs(ageDt.getUTCFullYear() - 1970);
   }
 
-  // =======================================
+  // =======================
+  // UYRUK DROPDOWN (YENİ)
+  // =======================
+  const NATIONALITIES = [
+    { code: "TR", name: "Türkiye", flag: "🇹🇷" },
+    { code: "US", name: "Amerika", flag: "🇺🇸" },
+    { code: "DE", name: "Almanya", flag: "🇩🇪" },
+    { code: "GB", name: "İngiltere", flag: "🇬🇧" },
+    { code: "FR", name: "Fransa", flag: "🇫🇷" },
+  ];
+
+  const [nationality, setNationality] = useState<any>(null);
+  const [showNationalityModal, setShowNationalityModal] = useState(false);
+
   // REGISTER
-  // =======================================
   async function handleRegister() {
     if (!gender) return setError("Lütfen cinsiyet seçiniz.");
     if (!birthday) return setError("Lütfen doğum tarihi seçiniz.");
+    if (!nationality) return setError("Lütfen uyruk seçiniz.");
 
     setError("");
     setLoading(true);
@@ -58,10 +87,10 @@ export default function Register() {
         avatar: "",
         createdAt: Date.now(),
 
-        // YENİ ALANLAR
         gender,
         birthday: birthday.toISOString().split("T")[0],
         age,
+        nationality,
       });
 
       router.push("/profile");
@@ -81,6 +110,7 @@ export default function Register() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View className="form">
+
           {/* Kullanıcı adı */}
           <TextInput
             placeholder="Kullanıcı Adı"
@@ -111,31 +141,32 @@ export default function Register() {
             style={styles.input}
           />
 
-          {/* YENİ → CİNSİYET */}
+          {/* CİNSİYET */}
           <Text style={{ color: "#fff", marginTop: 10 }}>Cinsiyet</Text>
+
           <View style={{ flexDirection: "row", marginTop: 6, gap: 10 }}>
             <TouchableOpacity
-              onPress={() => setGender("male")}
+              onPress={() => selectGender("male")}
               style={[
                 styles.genderBtn,
-                gender === "male" && styles.genderSelected,
+                gender === "male" && { backgroundColor: "#3b82f6" },
               ]}
             >
               <Text style={styles.genderText}>Erkek ♂</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={() => setGender("female")}
+              onPress={() => selectGender("female")}
               style={[
                 styles.genderBtn,
-                gender === "female" && styles.genderSelected,
+                gender === "female" && { backgroundColor: "#ec4899" },
               ]}
             >
               <Text style={styles.genderText}>Kadın ♀</Text>
             </TouchableOpacity>
           </View>
 
-          {/* YENİ → DOĞUM TARİHİ */}
+          {/* DOĞUM TARİHİ */}
           <Text style={{ color: "#fff", marginTop: 16 }}>Doğum Tarihi</Text>
 
           <TouchableOpacity
@@ -161,6 +192,59 @@ export default function Register() {
               }}
             />
           )}
+
+          {/* UYRUK */}
+          <Text style={{ color: "#fff", marginTop: 16 }}>Uyruk</Text>
+
+          <TouchableOpacity
+            onPress={() => setShowNationalityModal(true)}
+            style={styles.dropdownBtn}
+          >
+            <Text style={{ color: "#fff" }}>
+              {nationality
+                ? `${nationality.flag} ${nationality.name}`
+                : "Ülke Seç"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* MODAL */}
+          <Modal
+            visible={showNationalityModal}
+            transparent
+            animationType="slide"
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Uyruk Seç</Text>
+
+                <ScrollView style={{ maxHeight: 300 }}>
+
+                  {NATIONALITIES.map((item) => (
+                    <TouchableOpacity
+                      key={item.code}
+                      onPress={() => {
+                        setNationality(item);
+                        setShowNationalityModal(false);
+                      }}
+                      style={styles.modalItem}
+                    >
+                      <Text style={styles.modalItemText}>
+                        {item.flag} {item.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+
+                </ScrollView>
+
+                <TouchableOpacity
+                  onPress={() => setShowNationalityModal(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  <Text style={{ color: "#fff" }}>Kapat</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
 
           {/* KAYIT BUTONU */}
           <TouchableOpacity
@@ -241,16 +325,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  genderSelected: {
-    backgroundColor: "#16a34a",
-  },
-
   genderText: {
     color: "white",
     fontSize: 16,
   },
 
   dateBtn: {
+    marginTop: 6,
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
+  },
+
+  dropdownBtn: {
     marginTop: 6,
     padding: 12,
     backgroundColor: "rgba(255,255,255,0.1)",
@@ -280,5 +367,46 @@ const styles = StyleSheet.create({
   loginLink: {
     color: "#60a5fa",
     textDecorationLine: "underline",
+  },
+
+  /* MODAL STYLES */
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    padding: 20,
+  },
+
+  modalContent: {
+    backgroundColor: "#111",
+    borderRadius: 12,
+    padding: 20,
+  },
+
+  modalTitle: {
+    fontSize: 20,
+    color: "white",
+    fontWeight: "600",
+    marginBottom: 14,
+  },
+
+  modalItem: {
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.07)",
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+
+  modalItemText: {
+    color: "white",
+    fontSize: 16,
+  },
+
+  modalCloseBtn: {
+    marginTop: 10,
+    padding: 12,
+    backgroundColor: "#444",
+    borderRadius: 8,
+    alignItems: "center",
   },
 });

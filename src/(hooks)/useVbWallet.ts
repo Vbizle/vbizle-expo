@@ -1,13 +1,7 @@
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { auth, db } from "../../firebase/firebaseConfig";
-import {
-  doc,
-  getDoc,
-  onSnapshot,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
-import { onAuthStateChanged } from "firebase/auth";
 
 type WalletState = {
   vbBalance: number;
@@ -24,9 +18,9 @@ export function useVbWallet() {
     let unsubUser: (() => void) | null = null;
     let unsubWallet: (() => void) | null = null;
 
-    unsubUser = onAuthStateChanged(auth, async (user) => {
-
+    unsubUser = onAuthStateChanged(auth, (user) => {
       if (!user) {
+        // Kullanıcı çıkış yaptığında temizle
         setWallet(null);
         setLoadingWallet(false);
         setError(null);
@@ -39,43 +33,14 @@ export function useVbWallet() {
 
       const userRef = doc(db, "users", user.uid);
 
-      try {
-        const snap = await getDoc(userRef);
+      // Daha önceki listener varsa kapat
+      if (unsubWallet) unsubWallet();
 
-        if (!snap.exists()) {
-          const initial: WalletState = {
-            vbBalance: 0,
-            vbTotalSent: 0,
-            vbTotalReceived: 0,
-          };
-
-          await setDoc(
-            userRef,
-            {
-              ...initial,
-              createdAt: new Date(),
-            },
-            { merge: true }
-          );
-        } else {
-          const data: any = snap.data() || {};
-          const patch: Partial<WalletState> = {};
-
-          if (data.vbBalance === undefined) patch.vbBalance = 0;
-          if (data.vbTotalSent === undefined) patch.vbTotalSent = 0;
-          if (data.vbTotalReceived === undefined)
-            patch.vbTotalReceived = 0;
-
-          if (Object.keys(patch).length > 0) {
-            await updateDoc(userRef, patch);
-          }
-        }
-
-        // 🔥 Canlı bakiye dinleyicisi
-        if (unsubWallet) unsubWallet();
-
-        unsubWallet = onSnapshot(userRef, (s) => {
-          const d: any = s.data() || {};
+      // Sadece CANLI OKUYUCU
+      unsubWallet = onSnapshot(
+        userRef,
+        (snap) => {
+          const d: any = snap.data() || {};
 
           setWallet({
             vbBalance: d.vbBalance ?? 0,
@@ -84,12 +49,13 @@ export function useVbWallet() {
           });
 
           setLoadingWallet(false);
-        });
-      } catch (err: any) {
-        console.error("useVbWallet error:", err);
-        setError(err?.message || "Wallet okunamadı");
-        setLoadingWallet(false);
-      }
+        },
+        (err) => {
+          console.error("useVbWallet snapshot error:", err);
+          setError("Wallet okunamadı");
+          setLoadingWallet(false);
+        }
+      );
     });
 
     return () => {

@@ -32,12 +32,13 @@ import { useUi } from "@/src/(providers)/UiProvider";
 // 📌 Uzun basma modalı
 import DmOptionsModal from "./components/DmOptionsModal";
 
+
 /* ======================================================
-   PROFIL POPUP — Expo Versiyonu
+   PROFIL POPUP
 ====================================================== */
 function IdProfilePopup({ user, onClose }) {
   const router = useRouter();
-  const photo = user.avatar || "/user.png";
+  const photo = user.avatar || "https://i.hizliresim.com/lsn35tu.png";
 
   return (
     <Modal transparent animationType="fade">
@@ -67,8 +68,9 @@ function IdProfilePopup({ user, onClose }) {
   );
 }
 
+
 /* ======================================================
-                       MESSAGES PAGE
+                    MESSAGES PAGE
 ====================================================== */
 export default function MessagesPage() {
   const router = useRouter();
@@ -84,9 +86,9 @@ export default function MessagesPage() {
   const [searchError, setSearchError] = useState("");
   const [searchUser, setSearchUser] = useState(null);
 
-  // 📌 Uzun basma
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
 
   /* ======================================================
      KULLANICIYI ÇEK
@@ -107,8 +109,9 @@ export default function MessagesPage() {
     return () => unsub();
   }, []);
 
+
   /* ======================================================
-     DM LİSTESİ + HIDDEN + PIN + GERİ GÖRÜNME
+       DM LİSTESİ – HIDDEN + PIN + GERİ GETİRME
   ====================================================== */
   useEffect(() => {
     if (!me) return;
@@ -116,8 +119,8 @@ export default function MessagesPage() {
     async function load() {
       const msgRef = collectionGroup(db, "messages");
       const qRef = query(msgRef, orderBy("time", "desc"));
-
       const snap = await getDocs(qRef);
+
       const conversations = {};
 
       snap.forEach((d) => {
@@ -151,42 +154,59 @@ export default function MessagesPage() {
 
         const userSnap = await getDoc(doc(db, "users", item.otherId));
         const uData = userSnap.data();
+        const avatar = uData.avatar || "https://i.hizliresim.com/lsn35tu.png";
 
         const metaRef = doc(db, "dm", convId, "meta", "info");
         const metaSnap = await getDoc(metaRef);
         const meta = metaSnap.exists() ? metaSnap.data() : {};
 
         const unread = meta.unread?.[me.uid] ?? 0;
-        const lastMsgTime = item.time?.seconds ?? 0;
-        const lastSeen = meta.lastSeenTime ?? 0;
 
-        // ❗ Kullanıcı DM’i gizlemişse
-        if (meta.hiddenFor && meta.hiddenFor[me.uid]) {
+        const lastMsgTime = item.time?.seconds
+  ? item.time.seconds
+  : Math.floor((item.time ?? 0) / 1000);
 
-  // mesaja ait zaman
-  const msgTime = item.time?.seconds ?? 0;
+// Last seen → saniye formatı
+let lastSeenRaw = 0;
+if (meta.lastSeenTime?.seconds) {
+  lastSeenRaw = meta.lastSeenTime.seconds;
+} else if (typeof meta.lastSeenTime === "number") {
+  lastSeenRaw = Math.floor(meta.lastSeenTime / 1000);
+} else {
+  lastSeenRaw = 0;
+}
 
-  // gizleme zamanı
-  const hiddenAt = meta.hiddenAt ?? 0;
+const lastSeen = lastSeenRaw;
+        /* -------------------------------------------
+         🔥 HIDDEN ALGORİTMASI – %100 stabil sürüm
+        ---------------------------------------------*/
+      const isHidden =
+  meta.hiddenFor &&
+  typeof meta.hiddenFor === "object" &&
+  meta.hiddenFor[me.uid] === true;
 
-  // yeni mesaj geldi mi?
-  if (msgTime > hiddenAt) {
+// DM gizlenmişse
+if (isHidden) {
+  // Yeni mesaj varsa geri getir
+  if (lastMsgTime > lastSeen) {
     await setDoc(
       metaRef,
       {
         hiddenFor: { [me.uid]: false },
-        lastSeenTime: msgTime,
+        lastSeenTime: lastMsgTime * 1000, // milisaniye kaydediyoruz
       },
       { merge: true }
     );
+  } else {
+    // Yeni mesaj yok → gizli kalmalı
+    continue;
   }
-
-  continue; // gizliyse listeye eklenmesin
 }
+
         finalArr.push({
           ...item,
           otherName: uData.username,
-          otherAvatar: uData.avatar,
+          otherAvatar: avatar,
           otherOnline: uData.online ?? false,
           unread,
           isPinned: meta.pinFor?.[me.uid] === true,
@@ -194,10 +214,13 @@ export default function MessagesPage() {
         });
       }
 
-      // 🔥 SABİT DM’LER EN ÜSTE
+      /* -----------------------------
+         📌 PIN SIRALAMA
+      ------------------------------*/
       finalArr.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
+
         return b.time.seconds - a.time.seconds;
       });
 
@@ -206,12 +229,14 @@ export default function MessagesPage() {
     }
 
     load();
+
     const unsub = onSnapshot(collectionGroup(db, "meta"), () => load());
     return () => unsub();
   }, [me, activeDM]);
 
+
   /* ======================================================
-     ID ARAMA
+         ID ARAMA
   ====================================================== */
   const handleSearch = async () => {
     setSearchError("");
@@ -248,8 +273,9 @@ export default function MessagesPage() {
     }
   };
 
+
   /* ======================================================
-     LOADING
+            LOADING
   ====================================================== */
   if (loading || !me) {
     return (
@@ -259,8 +285,9 @@ export default function MessagesPage() {
     );
   }
 
+
   /* ======================================================
-     UI
+                  UI – MESAJ LİSTESİ
   ====================================================== */
   return (
     <View style={{ flex: 1, backgroundColor: "#F2F2F5", paddingHorizontal: 14 }}>
@@ -297,7 +324,9 @@ export default function MessagesPage() {
         </View>
       </View>
 
-      {searchError ? <Text style={styles.searchError}>{searchError}</Text> : null}
+      {searchError ? (
+        <Text style={styles.searchError}>{searchError}</Text>
+      ) : null}
 
       <ScrollView style={{ marginTop: 10 }}>
         {list.map((m, i) => (
@@ -310,14 +339,15 @@ export default function MessagesPage() {
               setOptionsOpen(true);
             }}
           >
-            {/* Sabitlenmiş ise küçük pin */}
+            {/* Sabit DM ise pin göstergesi */}
             {m.isPinned && (
               <Text
                 style={{
                   position: "absolute",
-                  top: 6,
-                  right: 6,
-                  fontSize: 14,
+                  top: 8,
+                  right: 8,
+                  fontSize: 12,
+                  color: "#5c5c5c",
                 }}
               >
                 📌
@@ -351,18 +381,17 @@ export default function MessagesPage() {
           </TouchableOpacity>
         ))}
 
-        {list.length === 0 && <Text style={styles.empty}>Henüz mesaj yok</Text>}
+        {list.length === 0 && (
+          <Text style={styles.empty}>Henüz mesaj yok</Text>
+        )}
       </ScrollView>
 
-      {/* Uzun basma seçenek popupı */}
+      {/* Uzun basma popupı */}
       {selectedUser && (
         <DmOptionsModal
           visible={optionsOpen}
           conv={selectedUser}
           onClose={() => setOptionsOpen(false)}
-          onPin={() => console.log("Başa sabitle:", selectedUser.convId)}
-          onDelete={() => console.log("Mesajlaşmayı sil:", selectedUser.convId)}
-          onBlock={() => console.log("Engelle:", selectedUser.otherId)}
         />
       )}
 
@@ -373,8 +402,9 @@ export default function MessagesPage() {
   );
 }
 
+
 /* ======================================================
-                     STYLES — MAT BEYAZ
+                     STYLES
 ====================================================== */
 const styles = StyleSheet.create({
   center: {
@@ -486,6 +516,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 40,
   },
+
   popupBg: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.4)",
@@ -521,6 +552,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   popupBtnText: { color: "#fff", textAlign: "center", fontWeight: "700" },
+
   popupCloseBtn: {
     backgroundColor: "#dc2626",
     width: "100%",

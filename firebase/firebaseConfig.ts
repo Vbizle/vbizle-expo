@@ -1,16 +1,17 @@
 // firebase/firebaseConfig.ts
-import { initializeApp, getApps, getApp } from "firebase/app";
-import {
-  initializeAuth,
-  getReactNativePersistence,
-  getAuth,
-} from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getApp, getApps, initializeApp } from "firebase/app";
+import {
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getFunctions } from "firebase/functions";
 import { getStorage } from "firebase/storage";
 
 // ---------------------------------------------------------
-// FIREBASE CONFIG → WEB İLE BİREBİR AYNI
+// FIREBASE CONFIG
 // ---------------------------------------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyCItAB0IUES95OEUoCCCjI3Hib1usq1UnM",
@@ -18,21 +19,18 @@ const firebaseConfig = {
   databaseURL:
     "https://vbizle-f018f-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "vbizle-f018f",
-
-  // 🔥 ÖNEMLİ: BU AYNEN STORAGE EKRANINDAKİ İSİM
   storageBucket: "vbizle-f018f.firebasestorage.app",
-
   messagingSenderId: "559906574145",
   appId: "1:559906574145:web:da802868ae6ede79931bc0",
 };
 
 // ---------------------------------------------------------
-// APP — Duplicate initialize ENGELİ
+// APP INIT
 // ---------------------------------------------------------
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // ---------------------------------------------------------
-// AUTH — Expo için initializeAuth, yoksa getAuth
+// AUTH INIT
 // ---------------------------------------------------------
 let auth;
 try {
@@ -43,14 +41,37 @@ try {
   auth = getAuth(app);
 }
 
-// Firestore
+export { auth };
+
+// ---------------------------------------------------------
+// FIRESTORE
+// ---------------------------------------------------------
 export const db = getFirestore(app);
 
-// Storage (bucket’ı özellikle verelim)
-export const storage = getStorage(
-  app,
-  "gs://vbizle-f018f.firebasestorage.app"
-);
+// ---------------------------------------------------------
+// STORAGE
+// ---------------------------------------------------------
+export const storage = getStorage(app);
 
-// Auth export
-export { auth };
+// ---------------------------------------------------------
+// FUNCTIONS — RN/Expo için Token PATCH ZORUNLU
+// ---------------------------------------------------------
+export const functions = getFunctions(app, "us-central1");
+
+// Expo / RN ortamında token otomatik eklenmediği için MANUEL ekliyoruz
+functions.customFetch = async (url, options = {}) => {
+  try {
+    const user = auth.currentUser;
+    if (user) {
+      const token = await user.getIdToken();
+      options.headers = {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${token}`,
+      };
+    }
+  } catch (err) {
+    console.log("customFetch Token Error:", err);
+  }
+
+  return fetch(url, options);
+};

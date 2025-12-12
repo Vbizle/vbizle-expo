@@ -1,24 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  View,
-  Text,
-  TouchableOpacity,
-  TextInput,
-  StyleSheet,
   ActivityIndicator,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-import { auth, db } from "../../firebase/firebaseConfig";
-import {
-  doc,
-  updateDoc,
-  increment,
-  addDoc,
-  collection,
-  serverTimestamp,
-  getDoc,
-} from "firebase/firestore";
+import { auth, db } from "@/firebase/firebaseConfig";
+import { walletEngine } from "@/src/services/walletEngine";
+import { doc, getDoc } from "firebase/firestore";
 
 type Props = {
   visible: boolean;
@@ -48,20 +41,20 @@ export default function SendVbModal({
   const fromUid = auth.currentUser?.uid;
   const presetAmounts = [25, 50, 100, 1000];
 
-  // Gönderen profilini al
+  // Gönderen kullanıcıyı yükle
   useEffect(() => {
     async function loadSender() {
       if (!fromUid) return;
       const ref = doc(db, "users", fromUid);
       const snap = await getDoc(ref);
-      if (snap.exists()) {
-        setSenderProfile(snap.data());
-      }
+      if (snap.exists()) setSenderProfile(snap.data());
     }
     loadSender();
   }, [fromUid]);
 
-  // VB Gönder
+  // ============================================
+  //       VB Gönder (Yeni Engine Formatı)
+  // ============================================
   async function send(amount: number) {
     setErrorMsg("");
 
@@ -73,65 +66,19 @@ export default function SendVbModal({
     setSending(true);
 
     try {
-      // Gönderen → bakiye azalt
-      await updateDoc(doc(db, "users", fromUid), {
-        vbBalance: increment(-amount),
-        vbTotalSent: increment(amount),
-      });
-
-      // Alıcı → bakiye artır
-      await updateDoc(doc(db, "users", toUser.uid), {
-        vbBalance: increment(amount),
-        vbTotalReceived: increment(amount),
-      });
-
-      // Transaction kaydı
-      await addDoc(collection(db, "transactions"), {
+      await walletEngine.sendVb({
         fromUid,
         toUid: toUser.uid,
-
-        fromName: senderProfile?.username || "Kullanıcı",
-        fromAvatar: senderProfile?.avatar || "",
-
-        toName: toUser.name || "Kullanıcı",
-        toAvatar: toUser.avatar || "",
-
         amount,
-        type: "vb_send",
         roomId: roomId || null,
-        timestamp: serverTimestamp(),
+        fromProfile: senderProfile,
+        toProfile: toUser,
       });
 
-      // Oda donation bar güncelle
-      if (roomId) {
-        await updateDoc(doc(db, "rooms", String(roomId)), {
-          donationCurrent: increment(amount),
-        });
-      }
-
-      // Premium chat mesajı
-      if (roomId) {
-        await addDoc(collection(db, "rooms", String(roomId), "chat"), {
-          type: "vb_premium",
-          fromUid,
-          fromName: senderProfile?.username || "Kullanıcı",
-          fromAvatar: senderProfile?.avatar || "",
-
-          toUid: toUser.uid,
-          toName: toUser.name,
-          toAvatar: toUser.avatar,
-
-          amount,
-          text: `💸 ${amount} Vb gönderildi`,
-          createdAt: Date.now(),
-          timestamp: serverTimestamp(),
-        });
-      }
-
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.log("SEND VB ERROR:", err);
-      setErrorMsg("Bir hata oluştu!");
+      setErrorMsg(err?.message || "Bir hata oluştu!");
     } finally {
       setSending(false);
     }
@@ -195,7 +142,11 @@ export default function SendVbModal({
             )}
           </TouchableOpacity>
 
-          <TouchableOpacity disabled={sending} onPress={onClose} style={styles.closeBtn}>
+          <TouchableOpacity
+            disabled={sending}
+            onPress={onClose}
+            style={styles.closeBtn}
+          >
             <Text style={styles.closeBtnText}>Kapat</Text>
           </TouchableOpacity>
         </View>
@@ -204,9 +155,6 @@ export default function SendVbModal({
   );
 }
 
-// =====================================================
-// STYLES
-// =====================================================
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,

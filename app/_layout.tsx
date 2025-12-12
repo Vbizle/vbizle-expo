@@ -14,6 +14,9 @@ import { RoomProvider } from "@/src/(providers)/RoomProvider";
 import ThemeProvider, { useTheme } from "@/src/(providers)/ThemeProvider";
 import { UiProvider } from "@/src/(providers)/UiProvider";
 
+// ⭐ YENİ EKLENDİ — GLOBAL VIP + LEVEL Canlı Veri
+import { UserLiveDataProvider } from "@/src/(providers)/UserLiveDataProvider";
+
 // Components
 import BottomBar from "@/src/components/BottomBar";
 import MiniRoomBubble from "@/src/components/MiniRoomBubble";
@@ -53,7 +56,7 @@ function LayoutInner() {
     currentRoute.split("/").length === 3;
 
   // ------------------------------------------------------------
-  // ⭐ EN ÖNEMLİ DÜZELTME: AUTH GUARD
+  // AUTH GUARD
   // ------------------------------------------------------------
   if (!loading && !user && !isAuthPage) {
     return <Redirect href="/login" />;
@@ -150,9 +153,16 @@ export default function Layout() {
     <ThemeProvider>
       <UiProvider>
         <AuthProvider>
-          <RoomProvider>
-            <LayoutInner />
-          </RoomProvider>
+
+          {/* ⭐ GLOBAL VIP + LEVEL CANLI SİSTEM */}
+          <UserLiveDataProvider>
+
+            <RoomProvider>
+              <LayoutInner />
+            </RoomProvider>
+
+          </UserLiveDataProvider>
+
         </AuthProvider>
       </UiProvider>
     </ThemeProvider>

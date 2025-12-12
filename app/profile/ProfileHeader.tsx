@@ -8,15 +8,23 @@ import {
   View,
 } from "react-native";
 
+import { getLevelColor } from "@/src/utils/levelSystem"; // ⭐ METALİK LEVEL EKLENDİ
+import { getVipColor, getVipRank } from "@/src/utils/vipSystem";
+
 type Props = {
   avatar: string;
   username: string;
   vbId: string;
-  gender?: string;    // ⭐ yeni
-  age?: string | number; // ⭐ yeni
+  gender?: string;
+  age?: string | number;
+  nationality?: any;
   gallery: string[];
   usernameEdit: boolean;
   savingUsername: boolean;
+  vipScore: number;
+
+  levelInfo: { level: number; name: string };
+
   onAvatarChange: () => void;
   onUsernameClick: () => void;
   onUsernameChange: (val: string) => void;
@@ -31,9 +39,12 @@ export default function ProfileHeader({
   vbId,
   gender,
   age,
+  nationality,
   gallery,
   usernameEdit,
   savingUsername,
+  vipScore,
+  levelInfo,
   onAvatarChange,
   onUsernameClick,
   onUsernameChange,
@@ -43,9 +54,6 @@ export default function ProfileHeader({
 }: Props) {
   const hasGallery = gallery.filter(Boolean).length > 0;
 
-  // --------------------------------------------------------
-  //  BADGE (cinsiyet + yaş)
-  // --------------------------------------------------------
   const genderSymbol =
     gender === "male"
       ? "♂"
@@ -55,15 +63,19 @@ export default function ProfileHeader({
 
   const badgeColor =
     gender === "male"
-      ? "#3B82F6" // mavi
+      ? "#3B82F6"
       : gender === "female"
-      ? "#EC4899" // pembe
+      ? "#EC4899"
       : "#9CA3AF";
 
   const showBadge = genderSymbol && age;
 
+  const vipRank = getVipRank(vipScore);
+  const vipColor = getVipColor(vipRank);
+
   return (
     <View style={styles.wrapper}>
+
       {/* COVER */}
       <TouchableOpacity
         activeOpacity={0.9}
@@ -107,9 +119,7 @@ export default function ProfileHeader({
 
       {/* USER INFO */}
       <View style={styles.userInfo}>
-        <Text style={styles.vbId}>ID: {vbId}</Text>
 
-        {/* KULLANICI ADI + BADGE */}
         {!usernameEdit ? (
           <View style={styles.usernameRow}>
             <TouchableOpacity onPress={onUsernameClick}>
@@ -123,6 +133,10 @@ export default function ProfileHeader({
                   {age}
                 </Text>
               </View>
+            ) : null}
+
+            {nationality?.flag ? (
+              <Text style={styles.flagText}>{nationality.flag}</Text>
             ) : null}
           </View>
         ) : (
@@ -146,7 +160,26 @@ export default function ProfileHeader({
             </TouchableOpacity>
           </View>
         )}
+
+        <Text style={styles.vbId}>ID: {vbId}</Text>
       </View>
+
+      {/* ⭐ LEVEL + VIP */}
+      <View style={styles.rankRow}>
+        <Text
+          style={[
+            styles.levelTag,
+            { backgroundColor: getLevelColor(levelInfo.level) }, // ⭐ METALİK RENK
+          ]}
+        >
+          Lv {levelInfo.level}
+        </Text>
+
+        <Text style={[styles.vipTag, { backgroundColor: vipColor }]}>
+          VIP {vipRank}
+        </Text>
+      </View>
+
     </View>
   );
 }
@@ -156,9 +189,9 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     paddingHorizontal: 8,
+    position: "relative",
   },
 
-  /* COVER */
   coverContainer: {
     width: "100%",
     height: 160,
@@ -204,9 +237,10 @@ const styles = StyleSheet.create({
     color: "#1C1C1E",
   },
 
-  /* AVATAR */
   avatarWrapper: {
-    marginTop: -48,
+    marginTop: -50,
+    alignSelf: "flex-start",
+    marginLeft: 1,
   },
 
   avatar: {
@@ -218,21 +252,49 @@ const styles = StyleSheet.create({
     resizeMode: "cover",
   },
 
-  /* USER INFO */
   userInfo: {
-    marginTop: 16,
+    marginTop: -54,
+    alignItems: "flex-start",
+    width: "100%",
+    paddingLeft: 95,
+  },
+
+  rankRow: {
+    position: "absolute",
+    bottom: -25,
+    left: 10,
+    flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+  },
+
+  levelTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    borderRadius: 8,
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 10,
+  },
+
+  vipTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 1,
+    borderRadius: 8,
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 10,
   },
 
   vbId: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#6B7280",
   },
 
   usernameRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 4,
     marginTop: 4,
   },
 
@@ -242,17 +304,21 @@ const styles = StyleSheet.create({
     color: "#1C1C1E",
   },
 
-  /* BADGE */
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 0,
     borderRadius: 12,
   },
 
   badgeText: {
     color: "white",
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: "700",
+  },
+
+  flagText: {
+    fontSize: 16,
+    marginLeft: -2,
   },
 
   usernameEditBox: {
