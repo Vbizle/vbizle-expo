@@ -1,31 +1,31 @@
-// app/dealer/index.tsx
+ // app/dealer/index.tsx
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import {
-    addDoc,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    limit,
-    orderBy,
-    query,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  updateDoc,
+  where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function DealerScreen() {
@@ -79,38 +79,42 @@ export default function DealerScreen() {
   // =======================
   // Kullanıcı Ara (VB-ID)
   // =======================
-  async function findUser() {
-    if (!vbId.trim()) {
-      setPreview(null);
-      return;
-    }
+ async function findUser(v?: string) {
+  const value = (v ?? vbId).trim();
 
-    try {
-      setSearchLoading(true);
-
-      const q = query(collection(db, "users"), where("vbId", "==", vbId.trim().toUpperCase()));
-      const snap = await getDocs(q);
-
-      if (snap.empty) {
-        setPreview({ notFound: true });
-      } else {
-        const data = snap.docs[0].data();
-        setPreview({
-          uid: snap.docs[0].id,
-          username: data.username,
-          avatar: data.avatar,
-          role: data.role ?? "user",
-          vbId: data.vbId,
-          vbBalance: data.vbBalance ?? 0,
-        });
-      }
-    } catch {
-      Alert.alert("Hata", "Kullanıcı aranamadı.");
-    }
-
-    setSearchLoading(false);
+  if (!value) {
+    setPreview(null);
+    return;
   }
 
+  try {
+    setSearchLoading(true);
+
+    const q = query(
+      collection(db, "users"),
+      where("vbId", "==", value.toUpperCase())
+    );
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      setPreview({ notFound: true });
+    } else {
+      const data = snap.docs[0].data();
+      setPreview({
+        uid: snap.docs[0].id,
+        username: data.username,
+        avatar: data.avatar,
+        role: data.role ?? "user",
+        vbId: data.vbId,
+        vbBalance: data.vbBalance ?? 0,
+      });
+    }
+  } catch {
+    Alert.alert("Hata", "Kullanıcı aranamadı.");
+  }
+
+  setSearchLoading(false);
+}
   // =======================
   // BAYİ → BAKİYE YÜKLEME
   // =======================
@@ -146,13 +150,31 @@ export default function DealerScreen() {
         dealerWallet: dealerBalance - amt,
       });
 
-      // 3) İşlem geçmişine kaydet
+      // 3) BAYİ PANELİ GEÇMİŞİ (ESKİSİ GİBİ)
       await addDoc(collection(db, "dealerHistory", me.uid, "logs"), {
         userId: preview.uid,
         username: preview.username,
         avatar: preview.avatar,
         amount: amt,
         date: Date.now(),
+      });
+
+      // 4) KULLANICI YÜKLEME GEÇMİŞİ (ROOT FORMATINDA)
+      await addDoc(collection(db, "loadHistory"), {
+        type: "dealer_load",
+        source: "dealer",
+
+        admin: {
+          uid: me.uid,
+          username: myData?.username ?? "Bayi",
+          avatar: myData?.avatar ?? null,
+          role: "dealer",
+        },
+
+        toUid: preview.uid,
+        toVbId: preview.vbId,
+        amount: amt,
+        createdAt: Date.now(),
       });
 
       Alert.alert("Başarılı", `${amt} VB yüklendi.`);
@@ -169,7 +191,7 @@ export default function DealerScreen() {
         dealerWallet: dealerBalance - amt,
       });
 
-      // Listeyi yenile
+      // Listeyi yenile (EN KRİTİK NOKTA)
       loadLast10Logs(me.uid);
 
       setAmount("");
@@ -191,9 +213,7 @@ export default function DealerScreen() {
     );
 
     const snap = await getDocs(q);
-    const arr = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-
-    setHistory10(arr);
+    setHistory10(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
   }
 
   // =======================
@@ -227,34 +247,59 @@ export default function DealerScreen() {
         Bayi Bakiye: {myData?.dealerWallet ?? 0} VB
       </Text>
 
-      {/* VB-ID INPUT */}
       <TextInput
-        style={styles.input}
-        placeholder="Kullanıcı VB-ID (örn: VB-21)"
-        value={vbId}
-        onChangeText={setVbId}
-        onBlur={findUser}
-      />
+  style={styles.input}
+  placeholder="Kullanıcı ID (örn: Vb-1)"
+  value={vbId}
+  onChangeText={(text) => {
+    setVbId(text);
+    findUser(text);
+  }}
+/>
 
       {searchLoading && <ActivityIndicator color="#7c3aed" />}
 
-      {/* ÖNİZLEME */}
       {preview?.notFound && (
-        <Text style={{ color: "#b91c1c", marginTop: 10 }}>Kullanıcı bulunamadı</Text>
+        <Text style={{ color: "#b91c1c", marginTop: 10 }}>
+          Kullanıcı bulunamadı
+        </Text>
       )}
 
       {preview && !preview.notFound && (
-        <View style={styles.previewCard}>
-          <Image source={{ uri: preview.avatar }} style={styles.avatar} />
-          <View>
-            <Text style={styles.username}>{preview.username}</Text>
-            <Text style={styles.role}>{preview.role}</Text>
-            <Text style={styles.role}>Mevcut Bakiye: {preview.vbBalance} VB</Text>
-          </View>
-        </View>
-      )}
+  <View style={styles.previewCard}>
+    <Image source={{ uri: preview.avatar }} style={styles.avatar} />
+    <View>
+      <Text style={styles.username}>{preview.username}</Text>
+      <Text
+  style={[
+    styles.role,
+    preview.role === "root" && { color: "#ef4444" },   // 🔴 Root (kırmızı)
+    preview.role === "dealer" && { color: "#2563eb" }, // 🔵 Bayi
+    preview.role === "admin" && { color: "#7c3aed" },  // 🟣 Admin
+    preview.role === "system" && { color: "#6B7280" }, // ⚫ Sistem
+  ]}
+>
+  {preview.role === "root"
+    ? "Root"
+    : preview.role === "dealer"
+    ? "Bayi"
+    : preview.role === "admin"
+    ? "Admin"
+    : preview.role}
+</Text>
 
-      {/* MİKTAR INPUT */}
+      <Text
+        style={[
+          styles.role,
+          { display: myData?.isDealer ? "none" : "flex" },
+        ]}
+      >
+        Mevcut Bakiye: {preview.vbBalance} VB
+      </Text>
+    </View>
+  </View>
+)}
+
       <TextInput
         style={styles.input}
         placeholder="Yüklenecek miktar"
@@ -263,7 +308,6 @@ export default function DealerScreen() {
         keyboardType="numeric"
       />
 
-      {/* YÜKLEME BUTONU */}
       <TouchableOpacity
         style={styles.button}
         onPress={submit}
@@ -274,7 +318,6 @@ export default function DealerScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* SON 10 LOG */}
       <Text style={styles.historyTitle}>Son İşlemler</Text>
 
       <FlatList
@@ -298,7 +341,6 @@ export default function DealerScreen() {
         <Text style={styles.moreText}>Daha Fazla Gör</Text>
       </TouchableOpacity>
 
-      {/* TAM LİSTE MODAL */}
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalBox}>
           <Text style={styles.modalTitle}>Tüm İşlem Geçmişi</Text>
@@ -333,16 +375,8 @@ export default function DealerScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 18,
-    backgroundColor: "#fff",
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  container: { flex: 1, padding: 18, backgroundColor: "#fff" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   dealerBalance: {
     fontSize: 20,
     fontWeight: "700",
@@ -363,20 +397,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 12,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: 10,
-  },
-  username: {
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  role: {
-    fontSize: 12,
-    color: "#666",
-  },
+  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 10 },
+  username: { fontSize: 16, fontWeight: "700" },
+  role: { fontSize: 12, color: "#666" },
   button: {
     backgroundColor: "#7c3aed",
     padding: 14,
@@ -384,56 +407,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 10,
   },
-  btnText: {
-    color: "white",
-    fontWeight: "700",
-  },
-  historyTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginVertical: 10,
-  },
-  logItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
+  btnText: { color: "white", fontWeight: "700" },
+  historyTitle: { fontSize: 18, fontWeight: "600", marginVertical: 10 },
+  logItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
   logAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
     marginRight: 10,
   },
-  logName: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  logAmount: {
-    color: "#16a34a",
-    fontWeight: "700",
-  },
-  logDate: {
-    fontSize: 11,
-    color: "#666",
-  },
-  moreBtn: {
-    alignSelf: "center",
-    marginTop: 10,
-  },
-  moreText: {
-    color: "#2563eb",
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  modalBox: {
-    flex: 1,
-    padding: 18,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
+  logName: { fontSize: 14, fontWeight: "600" },
+  logAmount: { color: "#16a34a", fontWeight: "700" },
+  logDate: { fontSize: 11, color: "#666" },
+  moreBtn: { alignSelf: "center", marginTop: 10 },
+  moreText: { color: "#2563eb", fontSize: 14, fontWeight: "600" },
+  modalBox: { flex: 1, padding: 18 },
+  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 12 },
   closeBtn: {
     backgroundColor: "#b91c1c",
     padding: 12,
@@ -441,8 +430,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
-  closeText: {
-    color: "white",
-    fontWeight: "700",
-  },
+  closeText: { color: "white", fontWeight: "700" },
 });

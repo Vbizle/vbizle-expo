@@ -192,7 +192,17 @@ export default function LoadHistoryScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.username}>{item.user.username}</Text>
 
-                  <Text style={styles.tag}>{item.user.tag}</Text>
+                  <Text
+  style={[
+    styles.tag,
+    item.user.tag === "Bayi" && { color: "#2563eb" },
+    item.user.tag === "Root" && { color: "#df0c0cff" },
+    item.user.tag === "Sistem" && { color: "#6B7280" },
+    item.user.tag === "Satın Alma" && { color: "#16a34a" },
+  ]}
+>
+  {item.user.tag}
+</Text>
 
                   <Text style={styles.date}>
                     {new Date(item.createdAt).toLocaleString()}

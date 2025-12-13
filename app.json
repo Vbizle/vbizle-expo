@@ -35,7 +35,7 @@
     },
 
     "android": {
-      "package": "com.vbizle.app",
+      "package": "com.vbizle",
       "permissions": [
         "android.permission.INTERNET",
         "android.permission.RECORD_AUDIO",
