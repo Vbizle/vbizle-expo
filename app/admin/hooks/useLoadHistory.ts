@@ -1,13 +1,13 @@
 import { db } from "@/firebase/firebaseConfig";
 import {
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    limit,
-    orderBy,
-    query,
-    where,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  where,
 } from "firebase/firestore";
 import { useCallback, useState } from "react";
 
@@ -87,4 +87,4 @@ export default function useLoadHistory({
     loadHistory,
     resetHistory,
   };
-}
+} 

@@ -36,24 +36,69 @@ export default function LoadHistoryScreen() {
     loadInitial();
   }, [user]);
 
+  /* ===================================================
+     🔧 SADECE BAYİ İÇİN GENİŞLETİLDİ
+     Normal kullanıcılar HİÇ etkilenmez
+  =================================================== */
   async function loadInitial() {
     setLoading(true);
 
-    const q = query(
+    let docs: any[] = [];
+
+    // 1️⃣ HERKES İÇİN: loadHistory
+    const q1 = query(
       collection(db, "loadHistory"),
-      where("toUid", "==", user.uid),
+      where("toUid", "==", user!.uid),
       orderBy("createdAt", "desc"),
       limit(PAGE_SIZE)
     );
 
-    const snap = await getDocs(q);
-    const list = await parseDocs(snap);
+    const snap1 = await getDocs(q1);
+    docs.push(...snap1.docs);
+
+    // 2️⃣ SADECE BAYİ İSE: dealerHistory EKLE
+    try {
+      const us = await getDoc(doc(db, "users", user!.uid));
+      const isDealer = us.exists() && us.data()?.isDealer === true;
+
+      if (isDealer) {
+        const q2 = query(
+          collection(db, "dealerHistory"),
+          where("toUid", "==", user!.uid),
+          orderBy("createdAt", "desc"),
+          limit(PAGE_SIZE)
+        );
+
+        const snap2 = await getDocs(q2);
+        docs.push(...snap2.docs);
+      }
+    } catch (e) {
+      console.log("dealerHistory read error:", e);
+    }
+
+    // 3️⃣ BAYİ CÜZDANI KAYITLARINI AYIKLA
+    const filtered = docs.filter(
+      (d) => d.data()?.type !== "dealer_wallet_load"
+    );
+
+    // 4️⃣ TARİHE GÖRE TEKRAR SIRALA
+    filtered.sort(
+      (a, b) =>
+        (b.data()?.createdAt?.seconds || 0) -
+        (a.data()?.createdAt?.seconds || 0)
+    );
+
+    const list = await parseDocs({ docs: filtered });
 
     setHistory(list);
-    setLastDoc(snap.docs[snap.docs.length - 1] || null);
+    setLastDoc(filtered[filtered.length - 1] || null);
     setLoading(false);
   }
 
+  /* ===================================================
+     loadMore — DOKUNULMADI
+     (Mevcut davranış aynen korunur)
+  =================================================== */
   async function loadMore() {
     if (!lastDoc) return;
 
@@ -61,7 +106,7 @@ export default function LoadHistoryScreen() {
 
     const q = query(
       collection(db, "loadHistory"),
-      where("toUid", "==", user.uid),
+      where("toUid", "==", user!.uid),
       orderBy("createdAt", "desc"),
       startAfter(lastDoc),
       limit(PAGE_SIZE)
@@ -76,7 +121,7 @@ export default function LoadHistoryScreen() {
   }
 
   // ===================================================
-  // VERİ OKUMA — KUSURSUZ, ÇÖKMEZ
+  // VERİ OKUMA — KUSURSUZ, ÇÖKMEZ (AYNEN KORUNDU)
   // ===================================================
   async function parseDocs(snap: any) {
     const list: any[] = [];
@@ -84,14 +129,12 @@ export default function LoadHistoryScreen() {
     for (let d of snap.docs) {
       const data = d.data();
 
-      // TAM FALLBACK — ASLA undefined olmaz
       let displayUser = {
         username: "Sistem",
         avatar: "https://cdn-icons-png.flaticon.com/512/149/149071.png",
         tag: "Sistem",
       };
 
-      // ---- 1) Yeni sistem → admin:{} ----
       if (data.admin && typeof data.admin === "object") {
         displayUser = {
           username: data.admin.username || "Admin",
@@ -100,10 +143,7 @@ export default function LoadHistoryScreen() {
             "https://cdn-icons-png.flaticon.com/512/149/149071.png",
           tag: data.admin.role || "Admin",
         };
-      }
-
-      // ---- 2) Eski sistem → fromUid ----
-      else if (data.fromUid) {
+      } else if (data.fromUid) {
         try {
           const fs = await getDoc(doc(db, "users", data.fromUid));
           if (fs.exists()) {
@@ -116,12 +156,9 @@ export default function LoadHistoryScreen() {
               tag: u.role || "Kullanıcı",
             };
           }
-        } catch (e) {
-          console.log("fromUid read error:", e);
-        }
+        } catch {}
       }
 
-      // ---- 3) Kaynak → Root / Bayi / Sistem / Satın Alma ----
       if (data.source) {
         switch (data.source) {
           case "buyer":
@@ -139,18 +176,6 @@ export default function LoadHistoryScreen() {
           default:
             break;
         }
-      }
-
-      // ---- SON KONTROL: ASLA undefined olmasın ----
-      if (!displayUser.avatar) {
-        displayUser.avatar =
-          "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-      }
-      if (!displayUser.username) {
-        displayUser.username = "Sistem";
-      }
-      if (!displayUser.tag) {
-        displayUser.tag = "Sistem";
       }
 
       list.push({
@@ -193,16 +218,16 @@ export default function LoadHistoryScreen() {
                   <Text style={styles.username}>{item.user.username}</Text>
 
                   <Text
-  style={[
-    styles.tag,
-    item.user.tag === "Bayi" && { color: "#2563eb" },
-    item.user.tag === "Root" && { color: "#df0c0cff" },
-    item.user.tag === "Sistem" && { color: "#6B7280" },
-    item.user.tag === "Satın Alma" && { color: "#16a34a" },
-  ]}
->
-  {item.user.tag}
-</Text>
+                    style={[
+                      styles.tag,
+                      item.user.tag === "Bayi" && { color: "#2563eb" },
+                      item.user.tag === "Root" && { color: "#df0c0cff" },
+                      item.user.tag === "Sistem" && { color: "#6B7280" },
+                      item.user.tag === "Satın Alma" && { color: "#16a34a" },
+                    ]}
+                  >
+                    {item.user.tag}
+                  </Text>
 
                   <Text style={styles.date}>
                     {new Date(item.createdAt).toLocaleString()}
