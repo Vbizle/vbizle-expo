@@ -30,6 +30,12 @@ export default function LoadHistoryScreen() {
   const [loadingMore, setLoadingMore] = useState(false);
 
   const PAGE_SIZE = 25;
+   // 2️⃣ FORMAT FONKSİYONU 👉 TAM BURAYA
+  function formatVB(value: number) {
+    return new Intl.NumberFormat("tr-TR", {
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -234,7 +240,7 @@ export default function LoadHistoryScreen() {
                   </Text>
                 </View>
 
-                <Text style={styles.amount}>+{item.amount} VB</Text>
+                <Text style={styles.amount}>+{formatVB(item.amount)} VB</Text>
               </View>
             </View>
           ))}

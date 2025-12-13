@@ -1,4 +1,4 @@
- // app/dealer/index.tsx
+// app/dealer/index.tsx
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useRouter } from "expo-router";
@@ -6,9 +6,9 @@ import {
   addDoc,
   collection,
   doc,
-  getDoc,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
   updateDoc,
@@ -35,6 +35,8 @@ export default function DealerScreen() {
   const [myData, setMyData] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
+  const [dealerRevoked, setDealerRevoked] = useState(false);
+
   const [vbId, setVbId] = useState("");
   const [amount, setAmount] = useState("");
   const [searchLoading, setSearchLoading] = useState(false);
@@ -46,79 +48,117 @@ export default function DealerScreen() {
   const [historyAll, setHistoryAll] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<"dealer" | "root">("dealer");
+  const [rootHistory, setRootHistory] = useState<any[]>([]);
+
+  // =======================
+  // VB FORMATTER (BIN / MILYON AYRIMI)
+  // =======================
+  function formatVB(value: number) {
+    return new Intl.NumberFormat("tr-TR", {
+      maximumFractionDigits: 0,
+    }).format(value);
+  }
+
+  // =======================
+  // useEffect'ler ve diğer fonksiyonlar aşağıda
+  // =======================
+
+
   // =======================
   // AUTH + BAYİ KONTROLÜ
   // =======================
   useEffect(() => {
+    let unsubUser: any = null;
+
     const unsub = auth.onAuthStateChanged(async (u) => {
+      if (unsubUser) {
+        unsubUser();
+        unsubUser = null;
+      }
+
       if (u) {
         setMe(u);
-        const snap = await getDoc(doc(db, "users", u.uid));
-        if (!snap.exists()) {
-          Alert.alert("Hata", "Kullanıcı bulunamadı.");
-          return;
-        }
 
-        const d = snap.data();
-        setMyData(d);
+        const ref = doc(db, "users", u.uid);
 
-        if (!d.isDealer) {
-          Alert.alert("Yetki Yok", "Bu alana sadece bayiler girebilir.");
-          router.back();
-          return;
-        }
+        unsubUser = onSnapshot(ref, async (snap) => {
+          if (!snap.exists()) {
+            Alert.alert("Hata", "Kullanıcı bulunamadı.");
+            return;
+          }
 
-        loadLast10Logs(u.uid);
+          const d = snap.data();
+          setMyData(d);
+
+          if (!d.isDealer) {
+            setDealerRevoked(true);
+            return;
+          }
+
+          if (dealerRevoked) setDealerRevoked(false);
+
+          loadLast10Logs(u.uid);
+          loadRootLogs(u.uid);
+        });
       }
+
       setLoadingUser(false);
     });
 
-    return () => unsub();
-  }, []);
+    return () => {
+      if (unsubUser) unsubUser();
+      unsub();
+    };
+  }, [dealerRevoked]);
 
   // =======================
   // Kullanıcı Ara (VB-ID)
   // =======================
- async function findUser(v?: string) {
-  const value = (v ?? vbId).trim();
+  async function findUser(v?: string) {
+    if (dealerRevoked) return;
 
-  if (!value) {
-    setPreview(null);
-    return;
-  }
+    const value = (v ?? vbId).trim();
 
-  try {
-    setSearchLoading(true);
-
-    const q = query(
-      collection(db, "users"),
-      where("vbId", "==", value.toUpperCase())
-    );
-    const snap = await getDocs(q);
-
-    if (snap.empty) {
-      setPreview({ notFound: true });
-    } else {
-      const data = snap.docs[0].data();
-      setPreview({
-        uid: snap.docs[0].id,
-        username: data.username,
-        avatar: data.avatar,
-        role: data.role ?? "user",
-        vbId: data.vbId,
-        vbBalance: data.vbBalance ?? 0,
-      });
+    if (!value) {
+      setPreview(null);
+      return;
     }
-  } catch {
-    Alert.alert("Hata", "Kullanıcı aranamadı.");
+
+    try {
+      setSearchLoading(true);
+
+      const q = query(
+        collection(db, "users"),
+        where("vbId", "==", value.toUpperCase())
+      );
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        setPreview({ notFound: true });
+      } else {
+        const data = snap.docs[0].data();
+        setPreview({
+          uid: snap.docs[0].id,
+          username: data.username,
+          avatar: data.avatar,
+          role: data.role ?? "user",
+          vbId: data.vbId,
+          vbBalance: data.vbBalance ?? 0,
+        });
+      }
+    } catch {
+      Alert.alert("Hata", "Kullanıcı aranamadı.");
+    }
+
+    setSearchLoading(false);
   }
 
-  setSearchLoading(false);
-}
   // =======================
   // BAYİ → BAKİYE YÜKLEME
   // =======================
   async function submit() {
+    if (dealerRevoked) return;
     if (!preview?.uid || preview.notFound) return;
     if (submitLoading) return;
 
@@ -140,17 +180,14 @@ export default function DealerScreen() {
     try {
       setSubmitLoading(true);
 
-      // 1) Kullanıcı vbBalance artır
       await updateDoc(doc(db, "users", preview.uid), {
         vbBalance: (preview.vbBalance ?? 0) + amt,
       });
 
-      // 2) Bayinin bakiyesini düşür
       await updateDoc(doc(db, "users", me.uid), {
         dealerWallet: dealerBalance - amt,
       });
 
-      // 3) BAYİ PANELİ GEÇMİŞİ (ESKİSİ GİBİ)
       await addDoc(collection(db, "dealerHistory", me.uid, "logs"), {
         userId: preview.uid,
         username: preview.username,
@@ -159,18 +196,15 @@ export default function DealerScreen() {
         date: Date.now(),
       });
 
-      // 4) KULLANICI YÜKLEME GEÇMİŞİ (ROOT FORMATINDA)
       await addDoc(collection(db, "loadHistory"), {
         type: "dealer_load",
         source: "dealer",
-
         admin: {
           uid: me.uid,
           username: myData?.username ?? "Bayi",
           avatar: myData?.avatar ?? null,
           role: "dealer",
         },
-
         toUid: preview.uid,
         toVbId: preview.vbId,
         amount: amt,
@@ -179,23 +213,20 @@ export default function DealerScreen() {
 
       Alert.alert("Başarılı", `${amt} VB yüklendi.`);
 
-      // Önizlemeyi güncelle
       setPreview({
         ...preview,
         vbBalance: (preview.vbBalance ?? 0) + amt,
       });
 
-      // Bayi bakiyesini güncelle
       setMyData({
         ...myData,
         dealerWallet: dealerBalance - amt,
       });
 
-      // Listeyi yenile (EN KRİTİK NOKTA)
       loadLast10Logs(me.uid);
 
       setAmount("");
-    } catch (err) {
+    } catch {
       Alert.alert("Hata", "İşlem gerçekleştirilemedi.");
     }
 
@@ -203,7 +234,7 @@ export default function DealerScreen() {
   }
 
   // =======================
-  // SON 10 LOGU ÇEK
+  // SON 10 LOG (BAYİ)
   // =======================
   async function loadLast10Logs(uid: string) {
     const q = query(
@@ -217,9 +248,27 @@ export default function DealerScreen() {
   }
 
   // =======================
+  // ROOT → BAYİ YÜKLEMELERİ
+  // =======================
+  async function loadRootLogs(uid: string) {
+    const q = query(
+      collection(db, "loadHistory"),
+      where("toUid", "==", uid),
+      where("type", "==", "dealer_wallet_load"),
+      orderBy("createdAt", "desc"),
+      limit(10)
+    );
+
+    const snap = await getDocs(q);
+    setRootHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+  }
+
+  // =======================
   // TÜM LOG LİSTESİ
   // =======================
   async function loadAllLogs() {
+    if (dealerRevoked) return;
+
     const q = query(
       collection(db, "dealerHistory", me.uid, "logs"),
       orderBy("date", "desc")
@@ -241,105 +290,148 @@ export default function DealerScreen() {
     );
   }
 
+  if (dealerRevoked) {
+    return (
+      <View style={styles.center}>
+        <Text style={{ color: "#b91c1c", fontWeight: "700", fontSize: 16 }}>
+          Bayiniz kapatılmıştır. İyi günler dileriz.
+        </Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.dealerBalance}>
-        Bayi Bakiye: {myData?.dealerWallet ?? 0} VB
-      </Text>
-
-      <TextInput
-  style={styles.input}
-  placeholder="Kullanıcı ID (örn: Vb-1)"
-  value={vbId}
-  onChangeText={(text) => {
-    setVbId(text);
-    findUser(text);
-  }}
-/>
-
-      {searchLoading && <ActivityIndicator color="#7c3aed" />}
-
-      {preview?.notFound && (
-        <Text style={{ color: "#b91c1c", marginTop: 10 }}>
-          Kullanıcı bulunamadı
-        </Text>
-      )}
-
-      {preview && !preview.notFound && (
-  <View style={styles.previewCard}>
-    <Image source={{ uri: preview.avatar }} style={styles.avatar} />
-    <View>
-      <Text style={styles.username}>{preview.username}</Text>
-      <Text
-  style={[
-    styles.role,
-    preview.role === "root" && { color: "#ef4444" },   // 🔴 Root (kırmızı)
-    preview.role === "dealer" && { color: "#2563eb" }, // 🔵 Bayi
-    preview.role === "admin" && { color: "#7c3aed" },  // 🟣 Admin
-    preview.role === "system" && { color: "#6B7280" }, // ⚫ Sistem
-  ]}
->
-  {preview.role === "root"
-    ? "Root"
-    : preview.role === "dealer"
-    ? "Bayi"
-    : preview.role === "admin"
-    ? "Admin"
-    : preview.role}
-</Text>
-
-      <Text
-        style={[
-          styles.role,
-          { display: myData?.isDealer ? "none" : "flex" },
-        ]}
+  <View style={styles.headerRow}>
+    <View style={styles.tabs}>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === "dealer" && styles.tabActive]}
+        onPress={() => setActiveTab("dealer")}
       >
-        Mevcut Bakiye: {preview.vbBalance} VB
-      </Text>
-    </View>
-  </View>
-)}
-
-      <TextInput
-        style={styles.input}
-        placeholder="Yüklenecek miktar"
-        value={amount}
-        onChangeText={setAmount}
-        keyboardType="numeric"
-      />
+        <Text>Yüklemelerim</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.button}
-        onPress={submit}
-        disabled={submitLoading}
+        style={[styles.tab, activeTab === "root" && styles.tabActive]}
+        onPress={() => setActiveTab("root")}
       >
-        <Text style={styles.btnText}>
-          {submitLoading ? "Gönderiliyor..." : "Bakiye Yükle"}
-        </Text>
+        <Text>Satın Alımlarım</Text>
       </TouchableOpacity>
+    </View>
 
-      <Text style={styles.historyTitle}>Son İşlemler</Text>
+   <Text style={styles.dealerBalance}>
+  Bayi Bakiye: {formatVB(myData?.dealerWallet ?? 0)} VB
+</Text>
+  </View>
 
-      <FlatList
-        data={history10}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.logItem}>
-            <Image source={{ uri: item.avatar }} style={styles.logAvatar} />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.logName}>{item.username}</Text>
-              <Text style={styles.logAmount}>+{item.amount} VB</Text>
-            </View>
-            <Text style={styles.logDate}>
-              {new Date(item.date).toLocaleString("tr-TR")}
+      {activeTab === "dealer" && (
+        <>
+          <TextInput
+            style={styles.input}
+            placeholder="Kullanıcı ID (örn: Vb-1)"
+            value={vbId}
+            onChangeText={(text) => {
+              setVbId(text);
+              findUser(text);
+            }}
+          />
+
+          {searchLoading && <ActivityIndicator color="#7c3aed" />}
+
+          {preview?.notFound && (
+            <Text style={{ color: "#b91c1c", marginTop: 10 }}>
+              Kullanıcı bulunamadı
             </Text>
-          </View>
-        )}
-      />
+          )}
 
-      <TouchableOpacity style={styles.moreBtn} onPress={loadAllLogs}>
-        <Text style={styles.moreText}>Daha Fazla Gör</Text>
-      </TouchableOpacity>
+          {preview && !preview.notFound && (
+            <View style={styles.previewCard}>
+              <Image source={{ uri: preview.avatar }} style={styles.avatar} />
+              <View>
+                <Text style={styles.username}>{preview.username}</Text>
+                <Text style={styles.role}>{preview.role}</Text>
+              </View>
+            </View>
+          )}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Yüklenecek miktar"
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+          />
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={submit}
+            disabled={submitLoading}
+          >
+            <Text style={styles.btnText}>
+              {submitLoading ? "Gönderiliyor..." : "Bakiye Yükle"}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.historyTitle}>Son İşlemler</Text>
+
+          <FlatList
+            data={history10}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <View style={styles.logItem}>
+                <Image source={{ uri: item.avatar }} style={styles.logAvatar} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.logName}>{item.username}</Text>
+                  <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
+                </View>
+                <Text style={styles.logDate}>
+                  {new Date(item.date).toLocaleString("tr-TR")}
+                </Text>
+              </View>
+            )}
+          />
+
+          <TouchableOpacity style={styles.moreBtn} onPress={loadAllLogs}>
+            <Text style={styles.moreText}>Daha Fazla Gör</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      {activeTab === "root" && (
+  <FlatList
+    data={rootHistory}
+    keyExtractor={(item) => item.id}
+    renderItem={({ item }) => {
+      const date =
+        typeof item.createdAt === "number"
+          ? new Date(item.createdAt)
+          : item.createdAt?.toDate?.();
+
+     return (
+  <View style={styles.logItem}>
+    <Image
+      source={{
+        uri:
+          item.admin?.avatar ||
+          item.avatar ||
+          "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+      }}
+      style={styles.logAvatar}
+    />
+    <View style={{ flex: 1 }}>
+      <Text style={styles.logName}>
+        {item.admin?.username || item.username || "Root"}
+      </Text>
+      <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
+    </View>
+    <Text style={styles.logDate}>
+      {date ? date.toLocaleString("tr-TR") : ""}
+    </Text>
+  </View>
+);
+}}
+/>
+)}
 
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalBox}>
@@ -353,7 +445,7 @@ export default function DealerScreen() {
                 <Image source={{ uri: item.avatar }} style={styles.logAvatar} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.logName}>{item.username}</Text>
-                  <Text style={styles.logAmount}>+{item.amount} VB</Text>
+                  <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
                 </View>
                 <Text style={styles.logDate}>
                   {new Date(item.date).toLocaleString("tr-TR")}
@@ -374,14 +466,32 @@ export default function DealerScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 18, backgroundColor: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
+  headerRow: {
+  flexDirection: "column",   // 🔴 EN KRİTİK SATIR
+  alignItems: "center",
+  marginBottom: 12,
+},
+  tabs: { flexDirection: "row" },
+  tab: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginLeft: 6,
+    borderRadius: 8,
+    backgroundColor: "#ECECEC",
+  },
+  tabActive: {
+    backgroundColor: "#dcd0ff",
+  },
   dealerBalance: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "700",
-    marginBottom: 12,
+    marginBottom: 1,
     color: "#7c3aed",
+     marginTop: 15,
   },
   input: {
     backgroundColor: "#ECECEC",

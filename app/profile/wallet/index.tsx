@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig";
@@ -17,6 +17,12 @@ export default function WalletScreen() {
 
   const [vbBalance, setVbBalance] = useState(0);
   const [loading, setLoading] = useState(true);
+ 
+  function formatVB(value: number) {
+  return new Intl.NumberFormat("tr-TR", {
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
   useEffect(() => {
     if (!user) return;
@@ -47,7 +53,7 @@ export default function WalletScreen() {
 
       <View style={styles.balanceCard}>
         <Text style={styles.label}>Mevcut Bakiye</Text>
-        <Text style={styles.balance}>{vbBalance} VB</Text>
+        <Text style={styles.balance}>{formatVB(vbBalance)} VB</Text>
       </View>
 
       <TouchableOpacity
