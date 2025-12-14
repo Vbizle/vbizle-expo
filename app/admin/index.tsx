@@ -25,6 +25,12 @@ export default function AdminDashboard() {
         title="Oda Yönetimi"
         onPress={() => router.push("/admin/rooms")}
       />
+
+      {/* 🔹 YENİ */}
+      <AdminButton
+        title="Çekim Talepleri"
+        onPress={() => router.push("/admin/withdraw")}
+      />
     </View>
   );
 }

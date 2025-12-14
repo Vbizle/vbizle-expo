@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef } from "react";
 import { db } from "@/firebase/firebaseConfig";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { useUiState } from "@/src/(providers)/UiProvider";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { useEffect, useRef } from "react";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -13,7 +13,14 @@ export function useRoomPresence(
   profile: any,
   disablePresence: boolean
 ) {
-  const { isMinimized } = useUiState();
+  /* 🔒 EK: Provider henüz yoksa crash olmasın */
+  let isMinimized = false;
+  try {
+    const ui = useUiState?.();
+    isMinimized = ui?.isMinimized ?? false;
+  } catch {
+    isMinimized = false;
+  }
 
   // 🔥 Bu sayfada join işlemi sadece 1 defa çalışsın
   const joinedRef = useRef(false);
@@ -68,6 +75,8 @@ export function useRoomPresence(
       try {
         if (joinedRef.current) return;
         joinedRef.current = true;
+
+        if (!roomId) return;
 
         const ref = doc(db, "rooms", roomId);
         const snap = await getDoc(ref);

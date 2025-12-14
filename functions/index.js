@@ -228,5 +228,14 @@ exports.RootDecreaseDealerWallet = onRequest(async (req, res) => {
 
 exports.VipEngine = require("./vipLevel/VipEngine").VipEngine;
 exports.LevelEngine = require("./vipLevel/LevelEngine").LevelEngine;
+// functions/index.js
+const withdraw = require("./wallet/withdraw");
+exports.createWithdrawRequest = withdraw.createWithdrawRequest;
 
+// ==================================================
+// WITHDRAW ADMIN FUNCTIONS (EKLENDİ)
+// ==================================================
+const withdrawAdmin = require("./wallet/withdrawAdmin");
 
+exports.approveWithdrawRequest = withdrawAdmin.approveWithdrawRequest;
+exports.rejectWithdrawRequest = withdrawAdmin.rejectWithdrawRequest;

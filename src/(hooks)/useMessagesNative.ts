@@ -16,7 +16,15 @@ export function useMessages(roomId: string) {
   useEffect(() => {
     if (!roomId) return;
 
+    let isMounted = true;
+
     setLoading(true);
+
+    // 🔒 roomId güvenliği (native crash önleme)
+    if (typeof roomId !== "string" || roomId.length === 0) {
+      setLoading(false);
+      return;
+    }
 
     const ref = collection(db, "rooms", roomId, "chat");
 
@@ -25,6 +33,8 @@ export function useMessages(roomId: string) {
     const unsub = onSnapshot(
       q,
       (snap) => {
+        if (!isMounted) return;
+
         const list: any[] = [];
 
         snap.forEach((doc) => {
@@ -44,11 +54,16 @@ export function useMessages(roomId: string) {
       },
       (err) => {
         console.error("🔥 useMessages error:", err);
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     );
 
-    return () => unsub();
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, [roomId]);
 
   return { messages, loading };

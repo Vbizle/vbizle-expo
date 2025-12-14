@@ -8,6 +8,9 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 
 export default function YoutubeSectionNative({ room, user, roomId }) {
+  /* 🔒 EK: güvenli roomId (id / roomId farkı + undefined riski) */
+  const safeRoomId = roomId || room?.id || room?.roomId;
+
   const isHost = user?.uid === room?.ownerId;
   const playerRef = useRef(null);
 
@@ -22,8 +25,11 @@ export default function YoutubeSectionNative({ room, user, roomId }) {
      🔥 Host ses kontrolü
   ------------------------------------------------------- */
   const handleVolumeChange = async (vol) => {
+    if (!isHost) return;
+    if (!safeRoomId) return;
+
     try {
-      await updateDoc(doc(db, "rooms", roomId), {
+      await updateDoc(doc(db, "rooms", safeRoomId), {
         videoVolume: Math.round(vol),
       });
     } catch (err) {
@@ -44,9 +50,9 @@ export default function YoutubeSectionNative({ room, user, roomId }) {
         <YoutubePlayer
           ref={playerRef}
           height={240}
-          play={room.playerState === 1} // 1 = playing
-          videoId={room.youtube}
-          volume={room.videoVolume ?? 100}
+          play={room?.playerState === 1} // 1 = playing
+          videoId={room?.youtube}
+          volume={room?.videoVolume ?? 100}
           onChangeState={onStateChange}
         />
       </View>
@@ -60,7 +66,7 @@ export default function YoutubeSectionNative({ room, user, roomId }) {
             minimumValue={0}
             maximumValue={100}
             step={1}
-            value={room.videoVolume ?? 100}
+            value={room?.videoVolume ?? 100}
             onValueChange={handleVolumeChange}
             minimumTrackTintColor="#fff"
             maximumTrackTintColor="#555"

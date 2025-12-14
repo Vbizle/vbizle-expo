@@ -77,18 +77,12 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   // Aynı kişiden art arda popup çıkmasın
   const lastToastFrom = useRef<string | null>(null);
 
-  /** ==========================
-      🔥 DÜZELTİLMİŞ showToast
-  ========================== **/
   function showToast({ uid, avatar, name }) {
     if (!uid) return;
-
-    // Popup spam olmasın (sadece 1 kez)
     if (lastToastFrom.current === uid) return;
 
     lastToastFrom.current = uid;
 
-    // UID + avatar + name artık garanti
     setToastData({
       uid,
       avatar: avatar || "/user.png",
@@ -119,9 +113,6 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     outputRange: [-60, 0],
   });
 
-  /* ============================================================
-      🔥 GLOBAL UNREAD LISTENER – Popup tüm sayfalarda çalışır!
-  ============================================================ */
   useEffect(() => {
     if (!auth.currentUser) return;
     const me = auth.currentUser.uid;
@@ -129,7 +120,7 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     const unsub = onSnapshot(collectionGroup(db, "meta"), (snap) => {
       snap.docs.forEach((docSnap) => {
         const data = docSnap.data();
-        const path = docSnap.ref.path; // dm/convId/meta/info
+        const path = docSnap.ref.path;
 
         if (!path.includes("dm/")) return;
 
@@ -139,17 +130,10 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
         if (!otherId) return;
 
         if (!data.unread || !data.unread[me]) return;
-
-        const unreadCount = data.unread[me];
-        if (unreadCount <= 0) return;
-
-        // DM sayfası açıksa popup çıkmaz
+        if (data.unread[me] <= 0) return;
         if (activeDM === otherId) return;
-
-        // Aynı kullanıcı için popup tekrar çıkmasın
         if (lastToastFrom.current === otherId) return;
 
-        // Kullanıcı bilgisi
         getDoc(doc(db, "users", otherId)).then((uSnap) => {
           if (!uSnap.exists()) return;
           const u = uSnap.data();
@@ -183,19 +167,14 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
     >
       {children}
 
-      {/* Premium Toast Bildirimi */}
       {toastData && (
         <Animated.View
           style={[
             styles.toastCard,
-            {
-              opacity: toastAnim,
-              transform: [{ translateY }],
-            },
+            { opacity: toastAnim, transform: [{ translateY }] },
           ]}
         >
           <Image source={{ uri: toastData.avatar }} style={styles.toastAvatar} />
-
           <View style={{ flex: 1 }}>
             <Text style={styles.toastName}>{toastData.name}</Text>
             <Text style={styles.toastMsg}>Sana mesaj gönderdi…</Text>
@@ -206,7 +185,17 @@ export function UiProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* ==========================
+    MEVCUT HOOK (DEĞİŞMEDİ)
+========================== */
 export function useUi() {
+  return useContext(UiContext);
+}
+
+/* ==========================
+    🔥 EKLENEN ALIAS (FIX)
+========================== */
+export function useUiState() {
   return useContext(UiContext);
 }
 
@@ -230,20 +219,17 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 3000,
   },
-
   toastAvatar: {
     width: 45,
     height: 45,
     borderRadius: 999,
     marginRight: 10,
   },
-
   toastName: {
     fontSize: 15,
     fontWeight: "700",
     color: "#1C1C1E",
   },
-
   toastMsg: {
     fontSize: 13,
     color: "#6E6E73",

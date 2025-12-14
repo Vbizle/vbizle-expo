@@ -1,18 +1,20 @@
+import * as ImagePicker from "expo-image-picker";
 import React from "react";
 import {
-  View,
+  Image,
+  Modal,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Modal,
+  View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 
 export default function EditRoom({
   visible,
   newRoomName,
   setNewRoomName,
+  newRoomImage,          // 🔥 EK: preview için
   setNewRoomImage,
   saveRoomSettings,
   saving,
@@ -20,16 +22,32 @@ export default function EditRoom({
 }) {
   if (!visible) return null;
 
-  // 🔥 Expo Image Picker
+  /* --------------------------------------------------
+     📷 GALERİDEN RESİM SEÇ
+  -------------------------------------------------- */
   async function pickImage() {
+    // izin iste
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      alert("Galeri izni verilmedi");
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      quality: 0.8,
+      mediaTypes: ImagePicker.MediaType.Images, // ✅ deprecated FIX
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+      selectionLimit: 1,
     });
 
-    if (!result.canceled) {
-      setNewRoomImage(result.assets[0]); // RN'de FILE nesnesi böyle gelir
-    }
+    if (result.canceled) return;
+
+    const asset = result.assets?.[0];
+    if (!asset) return;
+
+    // 🔥 sadece asset gönderiyoruz (upload üst katmanda)
+    setNewRoomImage(asset);
   }
 
   return (
@@ -59,9 +77,21 @@ export default function EditRoom({
             <Text style={styles.fileBtnText}>📁 Oda Resmi Seç</Text>
           </TouchableOpacity>
 
+          {/* 🔥 PREVIEW */}
+          {newRoomImage?.uri && (
+            <Image
+              source={{ uri: newRoomImage.uri }}
+              style={styles.preview}
+            />
+          )}
+
           {/* BUTTONS */}
           <View style={styles.buttons}>
-            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={onClose}
+              disabled={saving}
+            >
               <Text style={styles.cancelText}>Kapat</Text>
             </TouchableOpacity>
 
@@ -81,7 +111,7 @@ export default function EditRoom({
   );
 }
 
-// -----------------------------------------
+/* ----------------------------------------- */
 
 const styles = StyleSheet.create({
   overlay: {
@@ -131,12 +161,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#333",
     borderRadius: 10,
-    marginBottom: 18,
+    marginBottom: 12,
   },
 
   fileBtnText: {
     textAlign: "center",
     color: "white",
+  },
+
+  preview: {
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    alignSelf: "center",
+    marginBottom: 12,
   },
 
   buttons: {

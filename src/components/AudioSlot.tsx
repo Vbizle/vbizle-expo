@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function AudioSlot({
   seatNumber,
@@ -12,6 +12,23 @@ export default function AudioSlot({
   onHostMute,
 }) {
   const [talking, setTalking] = useState(false);
+
+  /* 🔒 EK: güvenli callback sarmalları (mevcut akış korunur) */
+  const handleToggleMic = () => {
+    if (onToggleMic) onToggleMic();
+  };
+
+  const handleKick = () => {
+    if (onKick) onKick(seatNumber);
+  };
+
+  const handleHostMute = () => {
+    if (onHostMute && occupant?.uid) onHostMute(occupant.uid);
+  };
+
+  const handleInvite = () => {
+    if (onInvite) onInvite(seatNumber);
+  };
 
   /* -------------------------------------------------------
      🔥 Konuşma Algılama (LiveKit AudioLevel)
@@ -77,13 +94,18 @@ export default function AudioSlot({
       {!isEmpty && isSelf && (
         <View style={styles.row}>
           {/* Mikrofon Aç/Kapa */}
-          <TouchableOpacity onPress={onToggleMic} style={styles.selfBtn}>
-            <Text style={styles.btnText}>{occupant.mic ? "🎙" : "🔇"}</Text>
+          <TouchableOpacity
+            onPress={handleToggleMic}
+            style={styles.selfBtn}
+          >
+            <Text style={styles.btnText}>
+              {occupant.mic ? "🎙" : "🔇"}
+            </Text>
           </TouchableOpacity>
 
           {/* Koltuktan inme */}
           <TouchableOpacity
-            onPress={() => onKick(seatNumber)}
+            onPress={handleKick}
             style={styles.selfBtn2}
           >
             <Text style={styles.btnText}>⬇️</Text>
@@ -98,7 +120,7 @@ export default function AudioSlot({
         <View style={styles.row}>
           {/* Sustur / Susturmayı kaldır */}
           <TouchableOpacity
-            onPress={() => onHostMute?.(occupant.uid)}
+            onPress={handleHostMute}
             style={styles.hostMuteBtn}
           >
             <Text style={styles.btnText}>🔇</Text>
@@ -106,7 +128,7 @@ export default function AudioSlot({
 
           {/* Kullanıcıyı Koltuktan Kaldır */}
           <TouchableOpacity
-            onPress={() => onKick(seatNumber)}
+            onPress={handleKick}
             style={styles.hostKickBtn}
           >
             <Text style={styles.btnText}>❌</Text>
@@ -120,7 +142,7 @@ export default function AudioSlot({
       {isHost && isEmpty && onInvite && (
         <TouchableOpacity
           style={styles.inviteBtn}
-          onPress={() => onInvite(seatNumber)}
+          onPress={handleInvite}
         >
           <Text style={styles.inviteText}>Davet Et</Text>
         </TouchableOpacity>

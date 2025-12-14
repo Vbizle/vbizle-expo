@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
-import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/firebase/firebaseConfig";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 
-import CameraSlot from "../CameraSlot";
 import AudioSlot from "../AudioSlot";
+import CameraSlot from "../CameraSlot";
 
 import useLivekitRoom from "../useLivekitRoom";
 import useSlotTracks from "../useSlotTracks";
@@ -22,11 +22,12 @@ const normalizeSeat = (seat: any) =>
     : { uid: "", mic: false, hostMute: false };
 
 export default function CameraSection({ room, user, roomId }: any) {
-  roomId = roomId || room?.id; // 🔥 EXPO'DA GÜVENLİ FALLBACK
+  /* 🔒 EK: mutasyon yapmadan güvenli roomId */
+  const safeRoomId = roomId || room?.id;
 
   const currentUid = normalize(user?.uid);
-  const hostUid = normalize(room.ownerId);
-  const guestUid = normalize(room.guestSeat);
+  const hostUid = normalize(room?.ownerId);
+  const guestUid = normalize(room?.guestSeat);
 
   const isHost = currentUid === hostUid;
   const isGuestSelf = currentUid === guestUid;
@@ -48,8 +49,8 @@ export default function CameraSection({ room, user, roomId }: any) {
     load();
   }, [hostUid, guestUid]);
 
-  const audioSeat1 = normalizeSeat(room.audioSeat1);
-  const audioSeat2 = normalizeSeat(room.audioSeat2);
+  const audioSeat1 = normalizeSeat(room?.audioSeat1);
+  const audioSeat2 = normalizeSeat(room?.audioSeat2);
 
   const a1 = audioSeat1.uid;
   const a2 = audioSeat2.uid;
@@ -75,8 +76,11 @@ export default function CameraSection({ room, user, roomId }: any) {
     loadAudio();
   }, [a1, a2]);
 
-  // 🔥 LIVEKIT
-  const lk = useLivekitRoom({ roomId, currentUid });
+  // 🔥 LIVEKIT (roomId güvenli)
+  const lk = useLivekitRoom({
+    roomId: safeRoomId,
+    currentUid,
+  });
 
   const {
     localVideoTrack,
@@ -94,18 +98,20 @@ export default function CameraSection({ room, user, roomId }: any) {
     guestUid,
     audioSeat1,
     audioSeat2,
-    roomId,
+    roomId: safeRoomId,
   });
 
   const leaveAsHost = async () => {
-    await updateDoc(doc(db, "rooms", roomId), {
+    if (!safeRoomId) return;
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       "hostState.camera": false,
       "hostState.mic": false,
     });
   };
 
   const leaveAsGuest = async () => {
-    await updateDoc(doc(db, "rooms", roomId), {
+    if (!safeRoomId) return;
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       guestSeat: "",
       "guestState.camera": false,
       "guestState.mic": false,
@@ -113,13 +119,15 @@ export default function CameraSection({ room, user, roomId }: any) {
   };
 
   const leaveAudioSeat1 = async () => {
-    await updateDoc(doc(db, "rooms", roomId), {
+    if (!safeRoomId) return;
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       audioSeat1: { uid: "", mic: false, hostMute: false },
     });
   };
 
   const leaveAudioSeat2 = async () => {
-    await updateDoc(doc(db, "rooms", roomId), {
+    if (!safeRoomId) return;
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       audioSeat2: { uid: "", mic: false, hostMute: false },
     });
   };
@@ -134,18 +142,20 @@ export default function CameraSection({ room, user, roomId }: any) {
         isOccupied={true}
         isSelf={isHost}
         isHost={true}
-        cameraOn={room.hostState?.camera}
-        micOn={room.hostState?.mic}
+        cameraOn={room?.hostState?.camera}
+        micOn={room?.hostState?.mic}
         remoteTrack={!isHost ? remoteHostVideo : null}
         localTrack={isHost ? localVideoTrack : null}
         onToggleCamera={() =>
-          updateDoc(doc(db, "rooms", roomId), {
-            "hostState.camera": !room.hostState?.camera,
+          safeRoomId &&
+          updateDoc(doc(db, "rooms", safeRoomId), {
+            "hostState.camera": !room?.hostState?.camera,
           })
         }
         onToggleMic={() =>
-          updateDoc(doc(db, "rooms", roomId), {
-            "hostState.mic": !room.hostState?.mic,
+          safeRoomId &&
+          updateDoc(doc(db, "rooms", safeRoomId), {
+            "hostState.mic": !room?.hostState?.mic,
           })
         }
         onLeave={leaveAsHost}
@@ -171,7 +181,8 @@ export default function CameraSection({ room, user, roomId }: any) {
         onToggleMic={
           isAudio1Self
             ? () =>
-                updateDoc(doc(db, "rooms", roomId), {
+                safeRoomId &&
+                updateDoc(doc(db, "rooms", safeRoomId), {
                   "audioSeat1.mic": !audioSeat1.mic,
                 })
             : undefined
@@ -200,7 +211,8 @@ export default function CameraSection({ room, user, roomId }: any) {
         onToggleMic={
           isAudio2Self
             ? () =>
-                updateDoc(doc(db, "rooms", roomId), {
+                safeRoomId &&
+                updateDoc(doc(db, "rooms", safeRoomId), {
                   "audioSeat2.mic": !audioSeat2.mic,
                 })
             : undefined
@@ -218,18 +230,20 @@ export default function CameraSection({ room, user, roomId }: any) {
           isOccupied={true}
           isSelf={isGuestSelf}
           isHost={false}
-          cameraOn={room.guestState?.camera}
-          micOn={room.guestState?.mic}
+          cameraOn={room?.guestState?.camera}
+          micOn={room?.guestState?.mic}
           remoteTrack={!isGuestSelf ? remoteGuestVideo : null}
           localTrack={isGuestSelf ? localVideoTrack : null}
           onToggleCamera={() =>
-            updateDoc(doc(db, "rooms", roomId), {
-              "guestState.camera": !room.guestState?.camera,
+            safeRoomId &&
+            updateDoc(doc(db, "rooms", safeRoomId), {
+              "guestState.camera": !room?.guestState?.camera,
             })
           }
           onToggleMic={() =>
-            updateDoc(doc(db, "rooms", roomId), {
-              "guestState.mic": !room.guestState?.mic,
+            safeRoomId &&
+            updateDoc(doc(db, "rooms", safeRoomId), {
+              "guestState.mic": !room?.guestState?.mic,
             })
           }
           onLeave={leaveAsGuest}

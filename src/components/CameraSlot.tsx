@@ -26,8 +26,21 @@ export default function CameraSlot({
 }) {
   const [showControls, setShowControls] = useState(false);
 
-  // LiveKit track seçimi
+  // 🔒 EK: LiveKit track güvenli seçimi (mevcut mantık korunur)
   const activeTrack = isSelf ? localTrack : remoteTrack;
+
+  /* 🔒 EK: undefined callback guard'ları */
+  const handleToggleCamera = () => {
+    if (onToggleCamera) onToggleCamera();
+  };
+
+  const handleToggleMic = () => {
+    if (onToggleMic) onToggleMic();
+  };
+
+  const handleLeave = () => {
+    if (onLeave) onLeave();
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -68,7 +81,9 @@ export default function CameraSlot({
         {/* 🔥 Kamera kapalı overlay */}
         {isOccupied && !cameraOn && (
           <View style={styles.cameraOffBadge}>
-            <Text style={{ color: "white", fontSize: 12 }}>Kamera Kapalı</Text>
+            <Text style={{ color: "white", fontSize: 12 }}>
+              Kamera Kapalı
+            </Text>
           </View>
         )}
 
@@ -82,15 +97,28 @@ export default function CameraSlot({
         {/* --- KONTROL PANELİ (SADECE SELF GÖRÜR) --- */}
         {isOccupied && isSelf && showControls && (
           <View style={styles.controls}>
-            <Pressable style={styles.ctrlBtn} onPress={onToggleCamera}>
-              <Text style={styles.ctrlText}>{cameraOn ? "🎥" : "🚫"}</Text>
+            <Pressable
+              style={styles.ctrlBtn}
+              onPress={handleToggleCamera}
+            >
+              <Text style={styles.ctrlText}>
+                {cameraOn ? "🎥" : "🚫"}
+              </Text>
             </Pressable>
 
-            <Pressable style={styles.ctrlBtn} onPress={onToggleMic}>
-              <Text style={styles.ctrlText}>{micOn ? "🎙" : "🔇"}</Text>
+            <Pressable
+              style={styles.ctrlBtn}
+              onPress={handleToggleMic}
+            >
+              <Text style={styles.ctrlText}>
+                {micOn ? "🎙" : "🔇"}
+              </Text>
             </Pressable>
 
-            <Pressable style={styles.leaveBtn} onPress={onLeave}>
+            <Pressable
+              style={styles.leaveBtn}
+              onPress={handleLeave}
+            >
               <Text style={styles.ctrlText}>⏹</Text>
             </Pressable>
           </View>

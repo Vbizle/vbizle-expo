@@ -35,32 +35,39 @@ export function useJoinMessage(
     if (fired.current) return;
 
     async function sendJoinIfNeeded() {
-      const ref = doc(db, "rooms", roomId);
-      const snap = await getDoc(ref);
+      try {
+        if (!roomId) return;
 
-      if (!snap.exists()) return;
-
-      const data = snap.data();
-      const list = Array.isArray(data.onlineUsers) ? data.onlineUsers : [];
-
-      // Kullanıcı zaten listede → join event ATMAYIZ
-      const alreadyInside = list.some((u) => u.uid === user.uid);
-      if (alreadyInside) {
+        // 🔒 race condition önleme
         fired.current = true;
-        return;
+
+        const ref = doc(db, "rooms", roomId);
+        const snap = await getDoc(ref);
+
+        if (!snap.exists()) return;
+
+        const data = snap.data();
+        const list = Array.isArray(data.onlineUsers) ? data.onlineUsers : [];
+
+        // Kullanıcı zaten listede → join event ATMAYIZ
+        const alreadyInside = list.some((u) => u.uid === user.uid);
+        if (alreadyInside) {
+          return;
+        }
+
+        // Kullanıcı gerçekten ilk kez giriyor → join event gönder
+        await addDoc(collection(db, "rooms", roomId, "chat"), {
+          uid: user.uid,
+          name: profile.username,
+          photo: profile.avatar || null,
+          type: "join",
+          text: "joined_room_event_8392",
+          time: serverTimestamp(),
+        });
+      } catch (err) {
+        console.log("useJoinMessage ERROR:", err);
+        fired.current = false; // ❗ hata olursa tekrar deneme şansı kalsın
       }
-
-      // Kullanıcı gerçekten ilk kez giriyor → join event gönder
-      await addDoc(collection(db, "rooms", roomId, "chat"), {
-        uid: user.uid,
-        name: profile.username,
-        photo: profile.avatar || null,
-        type: "join",
-        text: "joined_room_event_8392",
-        time: serverTimestamp(),
-      });
-
-      fired.current = true; // 🔥 Bir daha tetiklenmez
     }
 
     sendJoinIfNeeded();

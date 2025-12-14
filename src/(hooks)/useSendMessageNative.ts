@@ -1,8 +1,8 @@
 "use client";
 
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { useState } from "react";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db } from "../../firebase/firebaseConfig";
+import { db } from "../../firebase/firebaseConfig";
 
 export function useSendMessage(roomId: string, user: any, profile: any) {
   const [newMsg, setNewMsg] = useState("");
@@ -12,6 +12,9 @@ export function useSendMessage(roomId: string, user: any, profile: any) {
     if (sending) return; // 🔥 Çift göndermeyi engelle
     if (!newMsg.trim()) return;
     if (!user || !profile) return;
+
+    // 🔒 roomId güvenliği (native crash önleme)
+    if (typeof roomId !== "string" || roomId.length === 0) return;
 
     // 🔥 Çok uzun mesaj engeli (kod bozmaz, sadece güvenlik)
     const text = newMsg.trim().slice(0, 500);

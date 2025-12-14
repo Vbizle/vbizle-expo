@@ -1,72 +1,70 @@
-// app/profile/assets/index.tsx
 import React, { useEffect, useState } from "react";
 import {
-    Alert, ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import {
-    collection,
-    onSnapshot,
-    orderBy,
-    query,
-    where,
+  collection,
+  onSnapshot,
+  orderBy,
+  query,
+  where,
 } from "firebase/firestore";
 
 import { useRouter } from "expo-router";
+
+import ConvertTab from "./components/ConvertTab";
+import DiamondsTab from "./components/DiamondsTab";
+import HistoryTab from "./components/HistoryTab";
 
 export default function AssetsPage() {
   const user = auth.currentUser;
   const router = useRouter();
 
-  const [tab, setTab] = useState<"convert" | "history">("convert");
+  const [tab, setTab] = useState<"diamonds" | "convert" | "history">("diamonds");
 
-  const [diamonds, setDiamonds] = useState(0);        // Elmas
-  const [withdrawable, setWithdrawable] = useState(0); // Çekilebilir VB
-  const [usdValue, setUsdValue] = useState(0);        // USD karşılığı
+  const [diamonds, setDiamonds] = useState(0);
+  const [withdrawable, setWithdrawable] = useState(0);
+  const [usdValue, setUsdValue] = useState(0);
 
   const [manualInput, setManualInput] = useState("");
+  const [history, setHistory] = useState<any[]>([]);
 
-  const [history, setHistory] = useState<any[]>([]); // Gönderilen bağışlar
+  const PRESETS = [5000, 25000, 50000, 100000, 250000, 500000];
 
-  // ==========================================================
-  // KULLANICI VARLIKLARINI DİNAMİK ÇEK
-  // ==========================================================
+  // ================= VARLIKLAR =================
   useEffect(() => {
     if (!user) return;
 
-    const ref = collection(db, "users");
-    const q = query(ref, where("__name__", "==", user.uid));
+    const q = query(
+      collection(db, "users"),
+      where("__name__", "==", user.uid)
+    );
 
     const unsub = onSnapshot(q, (snap) => {
       snap.forEach((doc) => {
         const d: any = doc.data();
-
         setDiamonds(d.vbDiamonds || 0);
         setWithdrawable(d.vbWithdrawable || 0);
-
-        const usd = (d.vbWithdrawable || 0) / 20000; // 20.000 VB → 1 USD
-        setUsdValue(usd);
+        setUsdValue((d.vbWithdrawable || 0) / 20000);
       });
     });
 
     return () => unsub();
   }, [user]);
 
-  // ==========================================================
-  // GEÇMİŞ: KİM BANA BAĞIŞ YAPTI?
-  // ==========================================================
+  // ================= GEÇMİŞ =================
   useEffect(() => {
     if (!user) return;
 
-    const ref = collection(db, "transactions");
     const q = query(
-      ref,
+      collection(db, "transactions"),
       where("toUid", "==", user.uid),
       where("type", "==", "gift"),
       orderBy("createdAt", "desc")
@@ -81,206 +79,114 @@ export default function AssetsPage() {
     return () => unsub();
   }, [user]);
 
-  // ==========================================================
-  // BOZDURMA FONKSİYONU
-  // ==========================================================
+  // ================= BOZDUR (ŞİMDİLİK MOCK) =================
   function convertDiamonds(amount: number) {
-    if (amount > diamonds) return Alert.alert("Vb", "Yeterli elmas yok!");
+    if (amount > diamonds) {
+      return Alert.alert("Vb", "Yeterli elmas yok!");
+    }
 
-    // Elmas → VB dönüşüm
-    const converted = Math.floor(amount / 2); // örneğin 5000 → 2500
-
-    alert(
-      `${amount} elmas başarıyla ${converted} VB olarak bakiyenize eklenecek (henüz backend yok)`
+    const converted = Math.floor(amount / 2);
+    Alert.alert(
+      "Bozdurma",
+      `${amount} elmas → ${converted} VB (backend henüz yok)`
     );
   }
 
   function handleManualConvert() {
     const val = Number(manualInput);
-    if (!val || val <= 0) return Alert.alert("Vb", "Geçerli bir sayı girin.");
+    if (!val || val <= 0) {
+      return Alert.alert("Vb", "Geçerli bir sayı girin.");
+    }
     convertDiamonds(val);
     setManualInput("");
   }
 
-  // ==========================================================
-  // UI
-  // ==========================================================
+  // ================= UI =================
   return (
     <ScrollView style={styles.container}>
-      {/* Geri */}
-      <TouchableOpacity
-        onPress={() => router.back()}
-        style={{ paddingVertical: 10 }}
-      >
+      <TouchableOpacity onPress={() => router.back()} style={{ paddingVertical: 10 }}>
         <Text style={{ fontSize: 16 }}>← Geri</Text>
       </TouchableOpacity>
 
-      {/* Sekmeler */}
+      {/* TAB BAR */}
       <View style={styles.tabRow}>
-        <TouchableOpacity
-          style={[styles.tabBtn, tab === "convert" && styles.tabBtnActive]}
-          onPress={() => setTab("convert")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "convert" && styles.tabTextActive,
-            ]}
+        {[
+          { key: "diamonds", label: "Elmaslarım" },
+          { key: "convert", label: "Bozdur" },
+          { key: "history", label: "Geçmiş" },
+        ].map((t: any) => (
+          <TouchableOpacity
+            key={t.key}
+            style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
+            onPress={() => setTab(t.key)}
           >
-            Bozdur
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabBtn, tab === "history" && styles.tabBtnActive]}
-          onPress={() => setTab("history")}
-        >
-          <Text
-            style={[
-              styles.tabText,
-              tab === "history" && styles.tabTextActive,
-            ]}
-          >
-            Geçmiş
-          </Text>
-        </TouchableOpacity>
+            <Text
+              style={[
+                styles.tabText,
+                tab === t.key && styles.tabTextActive,
+              ]}
+            >
+              {t.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
-      {/* ===================== */}
-      {/*     BOZDURMA          */}
-      {/* ===================== */}
+     {tab === "diamonds" && (
+  <DiamondsTab
+    diamondBalance={diamonds}
+    styles={styles}
+  />
+)}
+
       {tab === "convert" && (
-        <View>
-          <Text style={styles.title}>Elmas: {diamonds}</Text>
-          <Text style={styles.subTitle}>
-            Çekilebilir Tutar: {withdrawable} VB
-          </Text>
-          <Text style={styles.subTitle}>USD Karşılığı: ${usdValue}</Text>
-
-          <View style={{ marginTop: 20 }}>
-            <Text style={styles.sectionTitle}>Hazır Bozdurma</Text>
-
-            <TouchableOpacity
-              style={styles.box}
-              onPress={() => convertDiamonds(5000)}
-            >
-              <Text style={styles.boxText}>5000 Elmas → 2500 VB</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.box}
-              onPress={() => convertDiamonds(10000)}
-            >
-              <Text style={styles.boxText}>10000 Elmas → 5000 VB</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ marginTop: 30 }}>
-            <Text style={styles.sectionTitle}>Manuel Bozdurma</Text>
-
-            <TextInput
-              placeholder="Örn: 3000"
-              value={manualInput}
-              onChangeText={setManualInput}
-              keyboardType="numeric"
-              style={styles.input}
-            />
-
-            <TouchableOpacity
-              style={styles.convertBtn}
-              onPress={handleManualConvert}
-            >
-              <Text style={styles.convertBtnText}>Dönüştür</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <ConvertTab diamonds={diamonds} styles={styles} />
       )}
 
-      {/* ===================== */}
-      {/*       GEÇMİŞ          */}
-      {/* ===================== */}
       {tab === "history" && (
-        <View style={{ marginTop: 20 }}>
-          {history.length === 0 ? (
-            <Text style={{ fontSize: 16, opacity: 0.7 }}>
-              Henüz kimse VB göndermemiş.
-            </Text>
-          ) : (
-            history.map((item) => (
-              <View key={item.id} style={styles.historyItem}>
-                <Text style={styles.historyUser}>
-                  {item.fromName || "Bilinmeyen"} → {item.amount} VB
-                </Text>
-                <Text style={styles.historyDate}>
-                  {new Date(item.createdAt).toLocaleString()}
-                </Text>
-              </View>
-            ))
-          )}
-        </View>
+        <HistoryTab history={history} styles={styles} />
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#F7F8FA",
-  },
-  tabRow: {
-    flexDirection: "row",
-    marginTop: 10,
-    marginBottom: 10,
-  },
+  container: { padding: 20, backgroundColor: "#F7F8FA" },
+  tabRow: { flexDirection: "row", marginVertical: 10 },
   tabBtn: {
     flex: 1,
-    padding: 12,
+    padding: 10,
     borderRadius: 8,
     backgroundColor: "#DDD",
     alignItems: "center",
+    marginHorizontal: 2,
   },
-  tabBtnActive: {
-    backgroundColor: "#2563EB",
+  tabBtnActive: { backgroundColor: "#2563EB" },
+  tabText: { fontWeight: "700", color: "#444" },
+  tabTextActive: { color: "#fff" },
+  title: { fontSize: 20, fontWeight: "700", marginBottom: 10 },
+  grid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginVertical: 10,
   },
-  tabText: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#444",
-  },
-  tabTextActive: {
-    color: "#fff",
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  subTitle: {
-    fontSize: 16,
-    opacity: 0.7,
-    marginTop: 4,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  box: {
+  preset: {
+    width: "30%",
     backgroundColor: "#EEE",
-    padding: 14,
+    padding: 12,
     borderRadius: 10,
     marginBottom: 10,
+    alignItems: "center",
   },
-  boxText: {
-    fontSize: 16,
-  },
+  presetText: { fontWeight: "700" },
   input: {
     backgroundColor: "#FFF",
     borderRadius: 8,
     padding: 12,
-    marginTop: 10,
     borderWidth: 1,
     borderColor: "#DDD",
+    marginTop: 10,
   },
   convertBtn: {
     marginTop: 12,
@@ -289,24 +195,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
   },
-  convertBtnText: {
-    fontSize: 16,
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  convertBtnText: { color: "#fff", fontWeight: "700" },
   historyItem: {
     backgroundColor: "#FFF",
     padding: 14,
     borderRadius: 10,
     marginBottom: 10,
   },
-  historyUser: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  historyDate: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 4,
-  },
+  historyUser: { fontWeight: "700" },
+  historyDate: { fontSize: 12, opacity: 0.6, marginTop: 4 },
 });

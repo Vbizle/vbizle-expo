@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
   Image,
-  TouchableOpacity,
-  StyleSheet,
   Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import { useRouter } from "expo-router";
 
-import { db } from "../../firebase/firebaseConfig";
 import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../../firebase/firebaseConfig";
 
 export default function RoomHeader({
   room,
@@ -25,15 +25,20 @@ export default function RoomHeader({
 
   const [showExitPopup, setShowExitPopup] = useState(false);
 
-  const isOwner = user.uid === room.ownerId;
+  /* 🔒 EK: güvenli owner kontrolü (mevcudu bozmaz) */
+  const isOwner = !!user && !!room && user.uid === room.ownerId;
+
+  /* 🔒 EK: güvenli roomId (roomId / id farkı için) */
+  const safeRoomId = room?.roomId || room?.id;
 
   /* ---------------------------------------------------
       🔴 OWNER → ODAYI KAPAT
   --------------------------------------------------- */
   async function closeRoom() {
     if (!isOwner) return;
+    if (!safeRoomId) return;
 
-    await updateDoc(doc(db, "rooms", room.roomId), {
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       active: false,
       onlineUsers: [],
       onlineCount: 0,
@@ -56,12 +61,13 @@ export default function RoomHeader({
   --------------------------------------------------- */
   async function leaveRoomAsGuest() {
     if (isOwner) return;
+    if (!safeRoomId) return;
 
     const filtered = (room.onlineUsers || []).filter(
       (u: any) => u.uid !== user.uid
     );
 
-    await updateDoc(doc(db, "rooms", room.roomId), {
+    await updateDoc(doc(db, "rooms", safeRoomId), {
       onlineUsers: filtered,
       onlineCount: filtered.length,
     });
@@ -76,7 +82,10 @@ export default function RoomHeader({
     <>
       <View style={styles.header}>
         {/* SOL TARAF – Oda adı + resim */}
-        <TouchableOpacity style={styles.leftSide} onPress={onEditClick}>
+        <TouchableOpacity
+          style={styles.leftSide}
+          onPress={() => onEditClick && onEditClick()}
+        >
           <View style={styles.row}>
             <Image
               source={{ uri: room.image || "" }}
@@ -91,17 +100,23 @@ export default function RoomHeader({
         {/* SAĞ TARAF – ikonlar */}
         <View style={styles.icons}>
           {isOwner && (
-            <TouchableOpacity onPress={onSearchClick}>
+            <TouchableOpacity
+              onPress={() => onSearchClick && onSearchClick()}
+            >
               <Text style={styles.icon}>🔍</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity onPress={onOnlineClick}>
+          <TouchableOpacity
+            onPress={() => onOnlineClick && onOnlineClick()}
+          >
             <Text style={styles.icon}>👥 {room.onlineCount}</Text>
           </TouchableOpacity>
 
           {isOwner && (
-            <TouchableOpacity onPress={onDonationClick}>
+            <TouchableOpacity
+              onPress={() => onDonationClick && onDonationClick()}
+            >
               <Text style={styles.icon}>💰</Text>
             </TouchableOpacity>
           )}
@@ -177,7 +192,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-  },
+   // 🔥 ÇÖZÜM
+  zIndex: 50,
+  elevation: 50,
+  position: "relative",
+},
 
   leftSide: {
     flexDirection: "column",

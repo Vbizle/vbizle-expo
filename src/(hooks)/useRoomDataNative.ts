@@ -12,7 +12,12 @@ export function useRoomData(roomId: string) {
   const initFixedRef = useRef(false);
 
   useEffect(() => {
-    if (!roomId) return;
+    // 🔒 roomId güvenliği (Expo / Native crash önleme)
+    if (typeof roomId !== "string" || roomId.length === 0) {
+      setRoom(null);
+      setLoadingRoom(false);
+      return;
+    }
 
     let active = true;
     initFixedRef.current = false; // oda değişirse sıfırla
@@ -55,10 +60,12 @@ export function useRoomData(roomId: string) {
           // 🔥 Snapshot loop olmaması için sadece 1 defa çalıştır
           initFixedRef.current = true;
 
-          await updateDoc(refRoom, missing);
-          // ❗ Burada return edilmiyor
-          // Çünkü update sonrası snapshot tekrar gelecek
-          // ve d yerine yeni değerleri set edecek
+          try {
+            await updateDoc(refRoom, missing);
+          } catch (err) {
+            console.log("❌ donation field fix error:", err);
+          }
+          // ❗ return YOK — snapshot tekrar gelecek
         } else {
           initFixedRef.current = true;
         }
@@ -85,7 +92,8 @@ export function useRoomData(roomId: string) {
      🔵 DIŞARIDAN ROOM GÜNCELLEME API
   -------------------------------------------------- */
   async function updateRoomSettings(data: any) {
-    if (!roomId) return;
+    // 🔒 güvenlik
+    if (typeof roomId !== "string" || roomId.length === 0) return;
     await updateDoc(doc(db, "rooms", roomId), data);
   }
 
