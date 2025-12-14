@@ -1,6 +1,7 @@
 // app/dealer/index.tsx
 
 import { auth, db } from "@/firebase/firebaseConfig";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter } from "expo-router";
 import {
   addDoc,
@@ -18,15 +19,21 @@ import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
-  Image,
-  Modal,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+
+import styles from "./styles";
+import { formatVB } from "./utils/formatVB";
+
+import { getAuth } from "firebase/auth";
+import DealerHeader from "./components/DealerHeader";
+import DealerHistoryList from "./components/DealerHistoryList";
+import DealerHistoryModal from "./components/DealerHistoryModal";
+import DealerPreviewCard from "./components/DealerPreviewCard";
+import RootHistoryList from "./components/RootHistoryList";
 
 export default function DealerScreen() {
   const router = useRouter();
@@ -51,19 +58,51 @@ export default function DealerScreen() {
   const [activeTab, setActiveTab] = useState<"dealer" | "root">("dealer");
   const [rootHistory, setRootHistory] = useState<any[]>([]);
 
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [filteredLogs, setFilteredLogs] = useState<any[]>([]);
+  const [totalAmount, setTotalAmount] = useState(0);
+
   // =======================
-  // VB FORMATTER (BIN / MILYON AYRIMI)
+  // TARİH ARALIĞI FİLTRELEME
   // =======================
-  function formatVB(value: number) {
-    return new Intl.NumberFormat("tr-TR", {
-      maximumFractionDigits: 0,
-    }).format(value);
+  function applyDateFilterWith(logs: any[], s?: Date | null, e?: Date | null) {
+    const sDate = s ?? startDate;
+    const eDate = e ?? endDate;
+
+    if (!sDate || !eDate || !preview?.uid) {
+      setFilteredLogs(logs);
+      setTotalAmount(
+        logs.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+      );
+      return;
+    }
+
+    const start = new Date(sDate);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(eDate);
+    end.setHours(23, 59, 59, 999);
+
+    const filtered = logs.filter((l) => {
+      return (
+        l.userId === preview.uid &&
+        Number(l.date) >= start.getTime() &&
+        Number(l.date) <= end.getTime()
+      );
+    });
+
+    setFilteredLogs(filtered);
+    setTotalAmount(
+      filtered.reduce((sum, l) => sum + (Number(l.amount) || 0), 0)
+    );
   }
 
-  // =======================
-  // useEffect'ler ve diğer fonksiyonlar aşağıda
-  // =======================
-
+  function applyDateFilter(logs: any[]) {
+    applyDateFilterWith(logs);
+  }
 
   // =======================
   // AUTH + BAYİ KONTROLÜ
@@ -210,6 +249,29 @@ export default function DealerScreen() {
         amount: amt,
         createdAt: Date.now(),
       });
+      // ⭐ VIP ENGINE — BAYİ YÜKLEMESİ SONRASI
+try {
+  const authInstance = getAuth();
+  const token = await authInstance.currentUser?.getIdToken(true);
+
+  await fetch(
+    "https://us-central1-vbizle-f018f.cloudfunctions.net/VipEngine",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        targetUid: preview.uid,
+        amount: amt,
+      }),
+    }
+  );
+} catch (e) {
+  console.warn("VIP Engine çağrısı başarısız:", e);
+}
+
 
       Alert.alert("Başarılı", `${amt} VB yüklendi.`);
 
@@ -224,7 +286,6 @@ export default function DealerScreen() {
       });
 
       loadLast10Logs(me.uid);
-
       setAmount("");
     } catch {
       Alert.alert("Hata", "İşlem gerçekleştirilemedi.");
@@ -240,28 +301,31 @@ export default function DealerScreen() {
     const q = query(
       collection(db, "dealerHistory", uid, "logs"),
       orderBy("date", "desc"),
-      limit(10)
+      limit(50)
     );
 
     const snap = await getDocs(q);
-    setHistory10(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+    const logs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    setHistory10(logs);
+    applyDateFilter(logs);
   }
 
   // =======================
   // ROOT → BAYİ YÜKLEMELERİ
   // =======================
   async function loadRootLogs(uid: string) {
-    const q = query(
-      collection(db, "loadHistory"),
-      where("toUid", "==", uid),
-      where("type", "==", "dealer_wallet_load"),
-      orderBy("createdAt", "desc"),
-      limit(10)
-    );
+  const q = query(
+    collection(db, "loadHistory"),
+    where("toUid", "==", uid),
+    where("type", "in", ["dealer_wallet_load", "dealer_wallet_deduct"]),
+    orderBy("createdAt", "desc"),
+    limit(20)
+  );
 
-    const snap = await getDocs(q);
-    setRootHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-  }
+  const snap = await getDocs(q);
+  setRootHistory(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+}
 
   // =======================
   // TÜM LOG LİSTESİ
@@ -302,27 +366,12 @@ export default function DealerScreen() {
 
   return (
     <View style={styles.container}>
-  <View style={styles.headerRow}>
-    <View style={styles.tabs}>
-      <TouchableOpacity
-        style={[styles.tab, activeTab === "dealer" && styles.tabActive]}
-        onPress={() => setActiveTab("dealer")}
-      >
-        <Text>Yüklemelerim</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.tab, activeTab === "root" && styles.tabActive]}
-        onPress={() => setActiveTab("root")}
-      >
-        <Text>Satın Alımlarım</Text>
-      </TouchableOpacity>
-    </View>
-
-   <Text style={styles.dealerBalance}>
-  Bayi Bakiye: {formatVB(myData?.dealerWallet ?? 0)} VB
-</Text>
-  </View>
+      <DealerHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        dealerWallet={myData?.dealerWallet}
+        formatVB={formatVB}
+      />
 
       {activeTab === "dealer" && (
         <>
@@ -344,15 +393,16 @@ export default function DealerScreen() {
             </Text>
           )}
 
-          {preview && !preview.notFound && (
-            <View style={styles.previewCard}>
-              <Image source={{ uri: preview.avatar }} style={styles.avatar} />
-              <View>
-                <Text style={styles.username}>{preview.username}</Text>
-                <Text style={styles.role}>{preview.role}</Text>
-              </View>
-            </View>
-          )}
+          <DealerPreviewCard
+            preview={preview}
+            startDate={startDate}
+            endDate={endDate}
+            setStartDate={setStartDate}
+            setEndDate={setEndDate}
+            setShowStartPicker={setShowStartPicker}
+            setFilteredLogs={setFilteredLogs}
+            setTotalAmount={setTotalAmount}
+          />
 
           <TextInput
             style={styles.input}
@@ -374,22 +424,40 @@ export default function DealerScreen() {
 
           <Text style={styles.historyTitle}>Son İşlemler</Text>
 
-          <FlatList
-            data={history10}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.logItem}>
-                <Image source={{ uri: item.avatar }} style={styles.logAvatar} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.logName}>{item.username}</Text>
-                  <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
-                </View>
-                <Text style={styles.logDate}>
-                  {new Date(item.date).toLocaleString("tr-TR")}
-                </Text>
-              </View>
-            )}
+          <DealerHistoryList
+            data={startDate && endDate ? filteredLogs : history10}
+            formatVB={formatVB}
           />
+
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={(e, date) => {
+                setShowStartPicker(false);
+                if (date) {
+                  setStartDate(date);
+                  setShowEndPicker(true);
+                }
+              }}
+            />
+          )}
+
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={(e, date) => {
+                setShowEndPicker(false);
+                if (date) {
+                  setEndDate(date);
+                  applyDateFilterWith(history10, startDate, date);
+                }
+              }}
+            />
+          )}
 
           <TouchableOpacity style={styles.moreBtn} onPress={loadAllLogs}>
             <Text style={styles.moreText}>Daha Fazla Gör</Text>
@@ -398,147 +466,15 @@ export default function DealerScreen() {
       )}
 
       {activeTab === "root" && (
-  <FlatList
-    data={rootHistory}
-    keyExtractor={(item) => item.id}
-    renderItem={({ item }) => {
-      const date =
-        typeof item.createdAt === "number"
-          ? new Date(item.createdAt)
-          : item.createdAt?.toDate?.();
+        <RootHistoryList data={rootHistory} formatVB={formatVB} />
+      )}
 
-     return (
-  <View style={styles.logItem}>
-    <Image
-      source={{
-        uri:
-          item.admin?.avatar ||
-          item.avatar ||
-          "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-      }}
-      style={styles.logAvatar}
-    />
-    <View style={{ flex: 1 }}>
-      <Text style={styles.logName}>
-        {item.admin?.username || item.username || "Root"}
-      </Text>
-      <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
-    </View>
-    <Text style={styles.logDate}>
-      {date ? date.toLocaleString("tr-TR") : ""}
-    </Text>
-  </View>
-);
-}}
-/>
-)}
-
-      <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modalBox}>
-          <Text style={styles.modalTitle}>Tüm İşlem Geçmişi</Text>
-
-          <FlatList
-            data={historyAll}
-            keyExtractor={(i) => i.id}
-            renderItem={({ item }) => (
-              <View style={styles.logItem}>
-                <Image source={{ uri: item.avatar }} style={styles.logAvatar} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.logName}>{item.username}</Text>
-                  <Text style={styles.logAmount}>+{formatVB(item.amount)} VB</Text>
-                </View>
-                <Text style={styles.logDate}>
-                  {new Date(item.date).toLocaleString("tr-TR")}
-                </Text>
-              </View>
-            )}
-          />
-
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={() => setModalVisible(false)}
-          >
-            <Text style={styles.closeText}>Kapat</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
+      <DealerHistoryModal
+        visible={modalVisible}
+        historyAll={historyAll}
+        onClose={() => setModalVisible(false)}
+        formatVB={formatVB}
+      />
     </View>
   );
 }
-
-
-const styles = StyleSheet.create({
-  container: { flex: 1, padding: 18, backgroundColor: "#fff" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerRow: {
-  flexDirection: "column",   // 🔴 EN KRİTİK SATIR
-  alignItems: "center",
-  marginBottom: 12,
-},
-  tabs: { flexDirection: "row" },
-  tab: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginLeft: 6,
-    borderRadius: 8,
-    backgroundColor: "#ECECEC",
-  },
-  tabActive: {
-    backgroundColor: "#dcd0ff",
-  },
-  dealerBalance: {
-    fontSize: 22,
-    fontWeight: "700",
-    marginBottom: 1,
-    color: "#7c3aed",
-     marginTop: 15,
-  },
-  input: {
-    backgroundColor: "#ECECEC",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  previewCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    backgroundColor: "#f8f8f8",
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  avatar: { width: 48, height: 48, borderRadius: 24, marginRight: 10 },
-  username: { fontSize: 16, fontWeight: "700" },
-  role: { fontSize: 12, color: "#666" },
-  button: {
-    backgroundColor: "#7c3aed",
-    padding: 14,
-    borderRadius: 10,
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  btnText: { color: "white", fontWeight: "700" },
-  historyTitle: { fontSize: 18, fontWeight: "600", marginVertical: 10 },
-  logItem: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
-  logAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    marginRight: 10,
-  },
-  logName: { fontSize: 14, fontWeight: "600" },
-  logAmount: { color: "#16a34a", fontWeight: "700" },
-  logDate: { fontSize: 11, color: "#666" },
-  moreBtn: { alignSelf: "center", marginTop: 10 },
-  moreText: { color: "#2563eb", fontSize: 14, fontWeight: "600" },
-  modalBox: { flex: 1, padding: 18 },
-  modalTitle: { fontSize: 20, fontWeight: "700", marginBottom: 12 },
-  closeBtn: {
-    backgroundColor: "#b91c1c",
-    padding: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  closeText: { color: "white", fontWeight: "700" },
-});

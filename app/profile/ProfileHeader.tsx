@@ -8,8 +8,9 @@ import {
   View,
 } from "react-native";
 
-import { getLevelColor } from "@/src/utils/levelSystem"; // ⭐ METALİK LEVEL EKLENDİ
-import { getVipColor, getVipRank } from "@/src/utils/vipSystem";
+import { getLevelBadge } from "@/app/components/level-badges/levelBadgeMap";
+import { getVipColor, getVipLabel, getVipRank } from "@/src/utils/vipSystem";
+
 
 type Props = {
   avatar: string;
@@ -23,7 +24,12 @@ type Props = {
   savingUsername: boolean;
   vipScore: number;
 
-  levelInfo: { level: number; name: string };
+  // 🔧 SADECE TİP DÜZELTİLDİ (davranış aynı)
+  levelInfo: {
+    level: number;
+    label: string;
+    color: string;
+  };
 
   onAvatarChange: () => void;
   onUsernameClick: () => void;
@@ -72,10 +78,11 @@ export default function ProfileHeader({
 
   const vipRank = getVipRank(vipScore);
   const vipColor = getVipColor(vipRank);
+  const LevelBadge = getLevelBadge(levelInfo.level);
+
 
   return (
     <View style={styles.wrapper}>
-
       {/* COVER */}
       <TouchableOpacity
         activeOpacity={0.9}
@@ -119,7 +126,6 @@ export default function ProfileHeader({
 
       {/* USER INFO */}
       <View style={styles.userInfo}>
-
         {!usernameEdit ? (
           <View style={styles.usernameRow}>
             <TouchableOpacity onPress={onUsernameClick}>
@@ -165,21 +171,35 @@ export default function ProfileHeader({
       </View>
 
       {/* ⭐ LEVEL + VIP */}
-      <View style={styles.rankRow}>
-        <Text
-          style={[
-            styles.levelTag,
-            { backgroundColor: getLevelColor(levelInfo.level) }, // ⭐ METALİK RENK
-          ]}
-        >
-          Lv {levelInfo.level}
-        </Text>
-
-        <Text style={[styles.vipTag, { backgroundColor: vipColor }]}>
-          VIP {vipRank}
-        </Text>
+    <View style={styles.rankRow}>
+  {/* LV KAPSÜLÜ */}
+  <View
+    style={[
+      styles.levelTag,
+      {
+        backgroundColor: levelInfo.color,
+        flexDirection: "row",
+        alignItems: "center",
+      },
+    ]}
+  >
+    {LevelBadge && (
+      <View style={{ marginRight: 4, marginTop: 1 }}>
+        <LevelBadge size={11} />
       </View>
+    )}
 
+    <Text style={styles.levelText}>{levelInfo.label}</Text>
+  </View>
+
+  {/* LV – VIP ARASI BOŞLUK */}
+  <View style={{ width: 3 }} />
+
+  {/* VIP KAPSÜLÜ */}
+  <Text style={[styles.vipTag, { backgroundColor: vipColor }]}>
+    {getVipLabel(vipRank)}
+  </Text>
+</View>
     </View>
   );
 }
@@ -260,17 +280,20 @@ const styles = StyleSheet.create({
   },
 
   rankRow: {
-    position: "absolute",
-    bottom: -25,
-    left: 10,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-
+  position: "absolute",
+  bottom: -26,
+  left: 1,
+  flexDirection: "row",
+  alignItems: "center",
+},
+levelText: {
+  color: "#fdf7f7ff",
+  fontWeight: "700",
+  fontSize: 11,           // gerekirse 9 da olur
+},
   levelTag: {
     paddingHorizontal: 8,
-    paddingVertical: 1,
+    paddingVertical: 0,
     borderRadius: 8,
     color: "#fff",
     fontWeight: "700",

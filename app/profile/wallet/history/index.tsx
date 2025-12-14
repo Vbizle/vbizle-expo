@@ -63,29 +63,31 @@ export default function LoadHistoryScreen() {
     docs.push(...snap1.docs);
 
     // 2️⃣ SADECE BAYİ İSE: dealerHistory EKLE
-    try {
-      const us = await getDoc(doc(db, "users", user!.uid));
-      const isDealer = us.exists() && us.data()?.isDealer === true;
+   try {
+  const us = await getDoc(doc(db, "users", user!.uid));
+  const isDealer = us.exists() && us.data()?.isDealer === true;
 
-      if (isDealer) {
-        const q2 = query(
-          collection(db, "dealerHistory"),
-          where("toUid", "==", user!.uid),
-          orderBy("createdAt", "desc"),
-          limit(PAGE_SIZE)
-        );
+  if (isDealer) {
+    const qDealer = query(
+      collection(db, "loadHistory"),
+      where("toUid", "==", user!.uid),
+      orderBy("createdAt", "desc"),
+      limit(PAGE_SIZE * 10)
+    );
 
-        const snap2 = await getDocs(q2);
-        docs.push(...snap2.docs);
-      }
-    } catch (e) {
-      console.log("dealerHistory read error:", e);
-    }
+    const snapDealer = await getDocs(qDealer);
+    docs = snapDealer.docs;
+  }
+} catch (e) {
+  console.log("dealerHistory read error:", e);
+}
 
     // 3️⃣ BAYİ CÜZDANI KAYITLARINI AYIKLA
     const filtered = docs.filter(
-      (d) => d.data()?.type !== "dealer_wallet_load"
-    );
+  (d) =>
+    d.data()?.type !== "dealer_wallet_load" &&
+    d.data()?.type !== "dealer_wallet_deduct"
+);
 
     // 4️⃣ TARİHE GÖRE TEKRAR SIRALA
     filtered.sort(
@@ -185,11 +187,13 @@ export default function LoadHistoryScreen() {
       }
 
       list.push({
-        id: d.id,
-        amount: data.amount,
-        createdAt: data.createdAt,
-        user: displayUser,
-      });
+  id: d.id,
+  amount: data.amount,
+  createdAt: data.createdAt,
+  user: displayUser,
+  type: data.type,
+  source: data.source,
+});
     }
 
     return list;
@@ -212,38 +216,54 @@ export default function LoadHistoryScreen() {
         <Text style={styles.emptyText}>Henüz yükleme geçmişin yok.</Text>
       ) : (
         <>
-          {history.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <View style={styles.row}>
-                <Image
-                  source={{ uri: item.user.avatar }}
-                  style={styles.avatar}
-                />
+         {history.map((item) => {
+  const isDeduct =
+    item.user?.tag === "Root" &&
+    item.type !== "admin_load_vbid" &&
+    item.type !== "dealer_wallet_load";
 
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.username}>{item.user.username}</Text>
+  return (
+    <View key={item.id} style={styles.card}>
+      <View style={styles.row}>
+        <Image
+          source={{ uri: item.user.avatar }}
+          style={styles.avatar}
+        />
 
-                  <Text
-                    style={[
-                      styles.tag,
-                      item.user.tag === "Bayi" && { color: "#2563eb" },
-                      item.user.tag === "Root" && { color: "#df0c0cff" },
-                      item.user.tag === "Sistem" && { color: "#6B7280" },
-                      item.user.tag === "Satın Alma" && { color: "#16a34a" },
-                    ]}
-                  >
-                    {item.user.tag}
-                  </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.username}>{item.user.username}</Text>
 
-                  <Text style={styles.date}>
-                    {new Date(item.createdAt).toLocaleString()}
-                  </Text>
-                </View>
+          <Text
+            style={[
+              styles.tag,
+              item.user.tag === "Bayi" && { color: "#2563eb" },
+              item.user.tag === "Root" && { color: "#df0c0cff" },
+              item.user.tag === "Sistem" && { color: "#6B7280" },
+              item.user.tag === "Satın Alma" && { color: "#16a34a" },
+            ]}
+          >
+            {item.user.tag}
+          </Text>
 
-                <Text style={styles.amount}>+{formatVB(item.amount)} VB</Text>
-              </View>
-            </View>
-          ))}
+          <Text style={styles.date}>
+            {new Date(item.createdAt).toLocaleString()}
+          </Text>
+        </View>
+
+        <Text
+          style={[
+            styles.amount,
+            isDeduct && { color: "#dc2626" },
+          ]}
+        >
+          {isDeduct ? "-" : "+"}
+          {formatVB(item.amount)} VB
+        </Text>
+      </View>
+    </View>
+  );
+})}
+
 
           {lastDoc && (
             <TouchableOpacity

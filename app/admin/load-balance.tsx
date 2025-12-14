@@ -1,5 +1,6 @@
 import { auth, db } from "@/firebase/firebaseConfig";
 import {
+  addDoc,
   collection,
   doc,
   getDoc,
@@ -7,7 +8,6 @@ import {
   query,
   updateDoc,
   where,
-  addDoc,
 } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
@@ -22,9 +22,9 @@ import {
 import { walletEngine } from "@/src/services/walletEngine";
 import AdminButton from "./components/AdminButton";
 import AdminCard from "./components/AdminCard";
-import UserPreviewCard from "./components/UserPreviewCard";
-import LoadHistoryTabs from "./components/LoadHistoryTabs";
 import LoadHistoryRow from "./components/LoadHistoryRow";
+import LoadHistoryTabs from "./components/LoadHistoryTabs";
+import UserPreviewCard from "./components/UserPreviewCard";
 import useLoadHistory from "./hooks/useLoadHistory";
 
 const FALLBACK_AVATAR =
@@ -206,18 +206,85 @@ export default function LoadBalanceScreen() {
           keyboardType="numeric"
         />
 
-        <AdminButton
-          title="VB Bakiye Yükle"
-          onPress={submitNormalLoad}
-          disabled={loading}
-        />
+        <View style={{ flexDirection: "row", gap: 10 }}>
+  <View style={{ flex: 1 }}>
+    <AdminButton
+      title="VB Bakiye Yükle"
+      onPress={submitNormalLoad}
+      disabled={loading}
+    />
+  </View>
 
-        {myData?.role === "root" && preview?.isDealer && (
-          <AdminButton
-            title="Bayi Cüzdanına VB Yükle"
-            onPress={submitDealerWalletLoad}
-          />
-        )}
+  <View style={{ flex: 1 }}>
+    <AdminButton
+      title="Bakiye Eksilt"
+      onPress={async () => {
+  try {
+    const amt = Number(amount);
+
+    if (!preview?.uid || !amt || amt <= 0) {
+      Alert.alert("Hata", "Geçerli miktar girin.");
+      return;
+    }
+
+    await walletEngine.rootDecreaseUserBalance({
+      toUid: preview.uid,
+      amount: amt,
+    });
+
+    setAmount("");
+    await loadHistory(preview.vbId);
+
+    Alert.alert("Başarılı", "Kullanıcı bakiyesi eksiltildi.");
+  } catch (e: any) {
+    Alert.alert("Hata", e.message || "İşlem başarısız.");
+  }
+}}
+      variant="danger"
+    />
+  </View>
+</View>
+
+       {myData?.role === "root" && preview?.isDealer && (
+  <View style={{ flexDirection: "row", gap: 10 }}>
+    <View style={{ flex: 1 }}>
+      <AdminButton
+        title="Bayi Cüzdanına VB Yükle"
+        onPress={submitDealerWalletLoad}
+      />
+    </View>
+
+    <View style={{ flex: 1 }}>
+      <AdminButton
+        title="Bayi Bakiye Eksilt"
+        variant="danger"
+        onPress={async () => {
+          try {
+            const amt = Number(amount);
+
+            if (!preview?.uid || !amt || amt <= 0) {
+              Alert.alert("Hata", "Geçerli miktar girin.");
+              return;
+            }
+
+            await walletEngine.rootDecreaseDealerWallet({
+              toUid: preview.uid,
+              amount: amt,
+            });
+
+            setAmount("");
+            await loadHistory(preview.vbId);
+
+            Alert.alert("Başarılı", "Bayi bakiyesi eksiltildi.");
+          } catch (e: any) {
+            Alert.alert("Hata", e.message || "İşlem başarısız.");
+          }
+        }}
+      />
+    </View>
+  </View>
+)}
+
 
         <LoadHistoryTabs value={historyTab} onChange={setHistoryTab} />
 

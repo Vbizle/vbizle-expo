@@ -1,5 +1,3 @@
-// functions/index.js
-
 require("./core/init");
 const admin = require("firebase-admin");
 
@@ -16,10 +14,10 @@ const {
 console.log("INDEX_LOADED: Functions loaded");
 
 /* ============================================================
-   2-B) ADMIN / DEALER → VBID LOAD (FINAL + DEBUG)
+   2-B) ADMIN / DEALER → VBID LOAD
+   - VIP SADECE: dealer | google_play
 ============================================================ */
 exports.VbAdminByVbId = onRequest(async (req, res) => {
-  // 🔴 EN KRİTİK LOG — İSTEK GELİYOR MU?
   console.log("🔥 VbAdminByVbId_RAW_REQUEST", {
     method: req.method,
     headers: req.headers,
@@ -27,12 +25,7 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
   });
 
   const callerUid = await requireAuth(req, res);
-  if (!callerUid) {
-    console.log("⛔ VbAdminByVbId_AUTH_FAILED");
-    return;
-  }
-
-  console.log("✅ VbAdminByVbId_AUTH_OK", callerUid);
+  if (!callerUid) return;
 
   const body = parseBody(req);
   if (!body) return res.status(400).json({ error: "invalid-body" });
@@ -64,7 +57,9 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
 
       const target = targetSnap.data();
 
-      // ⭐ BAYİ YÜKLEME İSE → dealerWallet düş
+      /* ================================
+         BAYİ YÜKLEMESİ
+      ================================= */
       if (source === "dealer") {
         const dealerSnap = await trx.get(callerRef);
         const dealer = dealerSnap.data();
@@ -76,7 +71,6 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
           dealerWallet: wallet - amt,
         });
 
-        // ⭐ dealerHistory
         trx.set(db.collection("dealerHistory").doc(), {
           dealerUid: callerUid,
           toUid: targetDoc.id,
@@ -86,14 +80,25 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
         });
       }
 
-      // ⭐ KULLANICI BAKİYESİ
-      trx.update(targetDoc.ref, {
-        vbBalance: (target.vbBalance ?? 0) + amt,
-        vbTotalReceived: (target.vbTotalReceived ?? 0) + amt,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
+      /* ================================
+         VIP ARTACAK KAYNAKLAR
+         (ileride google_play eklenecek)
+      ================================= */
+      const isVipSource =
+        source === "dealer" || source === "google_play";
 
-      // ⭐ loadHistory (HER ZAMAN)
+      /* ================================
+         KULLANICI BAKİYESİ
+      ================================= */
+      trx.update(targetDoc.ref, {
+  vbBalance: (target.vbBalance ?? 0) + amt,
+  vbTotalReceived: (target.vbTotalReceived ?? 0) + amt,
+
+  // ✅ VIP: bakiye artışı olduğu anda artsın
+  vipScore: (target.vipScore ?? 0) + amt,
+
+  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+});
       trx.set(db.collection("loadHistory").doc(), {
         type: "admin_load_vbid",
         admin: callerInfo,
@@ -106,9 +111,122 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
     });
 
     return res.json({ success: true });
-
   } catch (err) {
     console.error("VbAdminByVbId_ERROR:", err.message);
     return res.status(400).json({ error: err.message });
   }
 });
+
+/* ============================================================
+   3-A) ROOT → USER VB BALANCE DECREASE
+   (VIP ETKİLENMEZ)
+============================================================ */
+exports.RootDecreaseUserBalance = onRequest(async (req, res) => {
+  const callerUid = await requireAuth(req, res);
+  if (!callerUid) return;
+
+  const role = await getUserRole(callerUid);
+  if (!isRoot(role)) {
+    return res.status(403).json({ error: "permission-denied" });
+  }
+
+  const body = parseBody(req);
+  if (!body) return res.status(400).json({ error: "invalid-body" });
+
+  const { toUid, amount } = body;
+  const amt = Number(amount);
+  if (!toUid || !amt || amt <= 0) {
+    return res.status(400).json({ error: "invalid-amount" });
+  }
+
+  const adminInfo = await getUserShort(callerUid);
+  const userRef = db.collection("users").doc(toUid);
+
+  try {
+    await db.runTransaction(async (trx) => {
+      const snap = await trx.get(userRef);
+      if (!snap.exists) throw new Error("not-found");
+
+      const user = snap.data();
+      const balance = user.vbBalance ?? 0;
+      if (balance < amt) throw new Error("insufficient-balance");
+
+      trx.update(userRef, {
+        vbBalance: balance - amt,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      trx.set(db.collection("loadHistory").doc(), {
+        type: "root_decrease",
+        source: "root",
+        admin: adminInfo,
+        toUid,
+        amount: amt,
+        createdAt: Date.now(),
+      });
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+/* ============================================================
+   3-B) ROOT → DEALER WALLET DECREASE
+============================================================ */
+exports.RootDecreaseDealerWallet = onRequest(async (req, res) => {
+  const callerUid = await requireAuth(req, res);
+  if (!callerUid) return;
+
+  const role = await getUserRole(callerUid);
+  if (!isRoot(role)) {
+    return res.status(403).json({ error: "permission-denied" });
+  }
+
+  const body = parseBody(req);
+  if (!body) return res.status(400).json({ error: "invalid-body" });
+
+  const { toUid, amount } = body;
+  const amt = Number(amount);
+  if (!toUid || !amt || amt <= 0) {
+    return res.status(400).json({ error: "invalid-amount" });
+  }
+
+  const adminInfo = await getUserShort(callerUid);
+  const userRef = db.collection("users").doc(toUid);
+
+  try {
+    await db.runTransaction(async (trx) => {
+      const snap = await trx.get(userRef);
+      if (!snap.exists) throw new Error("not-found");
+
+      const user = snap.data();
+      const wallet = user.dealerWallet ?? 0;
+      if (wallet < amt) throw new Error("insufficient-dealer-wallet");
+
+      trx.update(userRef, {
+        dealerWallet: wallet - amt,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      trx.set(db.collection("loadHistory").doc(), {
+        type: "root_dealer_decrease",
+        source: "root",
+        admin: adminInfo,
+        toUid,
+        amount: amt,
+        createdAt: Date.now(),
+      });
+    });
+
+    return res.json({ success: true });
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+});
+
+exports.VipEngine = require("./vipLevel/VipEngine").VipEngine;
+exports.LevelEngine = require("./vipLevel/LevelEngine").LevelEngine;
+
+

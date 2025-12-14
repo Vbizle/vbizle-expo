@@ -1,4 +1,3 @@
-// src/services/walletEngine.ts
 import { auth } from "@/firebase/firebaseConfig";
 
 const PROJECT_ID = "vbizle-f018f";
@@ -50,12 +49,36 @@ async function callApi(fnName: string, body: any) {
 class WalletEngine {
   // 1) Kullanıcıdan kullanıcıya VB gönderme
   async sendVb({ toUid, amount, roomId = null }) {
-    return await callApi("VbGonder", { toUid, amount, roomId });
+    const res = await callApi("VbGonder", { toUid, amount, roomId });
+
+    // 🔹 LV ARTIR — harcama yapan kullanıcı
+    try {
+      await callApi("LevelEngine", {
+        targetUid: auth.currentUser?.uid,
+        amount,
+      });
+    } catch (e) {
+      console.warn("LevelEngine (sendVb) hata:", e);
+    }
+
+    return res;
   }
 
   // 2) Odaya bağış
   async donateToRoom({ roomId, amount }) {
-    return await callApi("VbBagis", { roomId, amount });
+    const res = await callApi("VbBagis", { roomId, amount });
+
+    // 🔹 LV ARTIR — bağış yapan kullanıcı
+    try {
+      await callApi("LevelEngine", {
+        targetUid: auth.currentUser?.uid,
+        amount,
+      });
+    } catch (e) {
+      console.warn("LevelEngine (donateToRoom) hata:", e);
+    }
+
+    return res;
   }
 
   // 3) Admin → UID ile yükleme
@@ -80,6 +103,23 @@ class WalletEngine {
       role: makeAdmin ? "admin" : "user",
     });
   }
+
+  // 7) Root → Kullanıcı bakiyesi eksiltme
+  async rootDecreaseUserBalance({ toUid, amount }) {
+    return await callApi("RootDecreaseUserBalance", {
+      toUid,
+      amount,
+    });
+  }
+
+  // 8) Root → Bayi cüzdanı eksiltme
+  async rootDecreaseDealerWallet({ toUid, amount }) {
+    return await callApi("RootDecreaseDealerWallet", {
+      toUid,
+      amount,
+    });
+  }
 }
 
 export const walletEngine = new WalletEngine();
+

@@ -47,7 +47,8 @@
     "react-native-youtube-iframe": "^2.4.1",
     "expo-av": "~16.0.8",
     "expo-file-system": "~19.0.20",
-    "@react-native-community/datetimepicker": "8.4.4"
+    "@react-native-community/datetimepicker": "8.4.4",
+    "react-native-svg": "15.12.1"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",

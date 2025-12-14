@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { createContext, useContext, useEffect, useState } from "react";
+
+// ⭐ EKLENDİ — VIP / LEVEL FORMAT
+import { getLevelInfo } from "@/src/utils/levelSystem";
+import { getVipRank } from "@/src/utils/vipSystem";
 
 const RoomContext = createContext<any>(null);
 
@@ -68,6 +72,21 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     return false;
   }
 
+  // ======================================================
+  // ⭐ EKLENDİ — ODAYA GİRİŞ MESAJI FORMATLAYICI
+  // Mevcut sistemleri BOZMAZ, sadece yardımcıdır
+  // ======================================================
+  function formatJoinMessage(user: {
+    username: string;
+    vipScore?: number;
+    vbTotalSent?: number;
+  }): string {
+    const vipRank = getVipRank(user.vipScore ?? 0);
+    const levelInfo = getLevelInfo(user.vbTotalSent ?? 0);
+
+    return `VIP${vipRank} • ${user.username} • ${levelInfo.label} odaya katıldı`;
+  }
+
   return (
     <RoomContext.Provider
       value={{
@@ -76,6 +95,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         minimizeRoom,
         clearRoom,
         consumeSkipNextJoin,
+
+        // ⭐ EKLENDİ — dışarıdan kullanılabilir
+        formatJoinMessage,
       }}
     >
       {children}
