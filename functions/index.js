@@ -90,11 +90,13 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
       /* ================================
          KULLANICI BAKİYESİ
       ================================= */
-      trx.update(targetDoc.ref, {
+     trx.update(targetDoc.ref, {
+  // ✅ SATIN ALIM / ROOT / BAYİ → SADECE VB BAKİYE
   vbBalance: (target.vbBalance ?? 0) + amt,
-  vbTotalReceived: (target.vbTotalReceived ?? 0) + amt,
 
-  // ✅ VIP: bakiye artışı olduğu anda artsın
+  // ❌ vbTotalReceived ARTIK KULLANILMIYOR → SİLİNDİ
+
+  // (opsiyonel) VIP hala yüklemeyle artsın istiyorsan
   vipScore: (target.vipScore ?? 0) + amt,
 
   updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -239,3 +241,13 @@ const withdrawAdmin = require("./wallet/withdrawAdmin");
 
 exports.approveWithdrawRequest = withdrawAdmin.approveWithdrawRequest;
 exports.rejectWithdrawRequest = withdrawAdmin.rejectWithdrawRequest;
+
+exports.sendDonation =
+  require("./earnings/sendDonation").sendDonation;
+
+exports.convertDiamondToVB = require("./wallet/convertDiamondToVB");
+
+
+
+
+

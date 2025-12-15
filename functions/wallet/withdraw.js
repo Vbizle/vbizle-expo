@@ -53,7 +53,7 @@ if (!pendingSnap.empty) {
   return res.status(400).json({
     ok: false,
     error:
-      "Bekleyen çekim talebiniz var. Sonuçlanmasını bekleyip tekrar deneyin.",
+      "Bekleyen talebiniz var sonuçlanmasını bekleyin. ( Çekim talepleri 24 saatlik sürede yanlızca bir kez yapılabilir.)",
   });
 }
 
@@ -73,13 +73,18 @@ if (!lastReqSnap.empty) {
       ? lastReq.createdAt
       : lastReq.createdAt?.toMillis?.();
 
-  if (createdAt && now - createdAt < TWENTY_FOUR_HOURS) {
-    return res.status(400).json({
-      ok: false,
-      error:
-        "Bekleyen çekim talebiniz var. Sonuçlanmasını bekleyip tekrar deneyin.",
-    });
-  }
+ if (
+  lastReq.status !== "rejected" &&
+  createdAt &&
+  now - createdAt < TWENTY_FOUR_HOURS
+) {
+  return res.status(400).json({
+    ok: false,
+    error:
+      "Bekleyen talebiniz var sonuçlanmasını bekleyin. ( Çekim talepleri 24 saatlik sürede yanlızca bir kez yapılabilir.)",
+  });
+}
+
 }
 
     // ✅ Helpers ile aynı okuma tarzı
