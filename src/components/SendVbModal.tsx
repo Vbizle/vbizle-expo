@@ -10,7 +10,6 @@ import {
 } from "react-native";
 
 import { auth, db } from "@/firebase/firebaseConfig";
-import { walletEngine } from "@/src/services/walletEngine";
 import { doc, getDoc } from "firebase/firestore";
 
 type Props = {
@@ -66,14 +65,20 @@ export default function SendVbModal({
     setSending(true);
 
     try {
-      await walletEngine.sendVb({
-        fromUid,
-        toUid: toUser.uid,
-        amount,
-        roomId: roomId || null,
-        fromProfile: senderProfile,
-        toProfile: toUser,
-      });
+     await fetch(
+  "https://us-central1-vbizle-f018f.cloudfunctions.net/sendDonation",
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await auth.currentUser?.getIdToken()}`,
+    },
+    body: JSON.stringify({
+      toUid: toUser.uid,
+      amount,
+    }),
+  }
+);
 
       onClose();
     } catch (err: any) {

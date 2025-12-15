@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View,
-  Text,
   Image,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 export default function ChatSection({ messages, onUserClick }) {

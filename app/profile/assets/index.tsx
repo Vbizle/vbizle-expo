@@ -19,6 +19,7 @@ import {
 
 import { useRouter } from "expo-router";
 
+import { getDocs, limit } from "firebase/firestore";
 import ConvertTab from "./components/ConvertTab";
 import DiamondsTab from "./components/DiamondsTab";
 import HistoryTab from "./components/HistoryTab";
@@ -50,9 +51,13 @@ export default function AssetsPage() {
     const unsub = onSnapshot(q, (snap) => {
       snap.forEach((doc) => {
         const d: any = doc.data();
-        setDiamonds(d.vbDiamonds || 0);
-        setWithdrawable(d.vbWithdrawable || 0);
-        setUsdValue((d.vbWithdrawable || 0) / 20000);
+
+        // ✅ DOĞRU ALANLAR
+        const diamondBalance = d.diamondBalance ?? 0;
+
+        setDiamonds(diamondBalance);
+        setWithdrawable(diamondBalance); // şimdilik aynı
+        setUsdValue(diamondBalance / 20000);
       });
     });
 
@@ -60,24 +65,30 @@ export default function AssetsPage() {
   }, [user]);
 
   // ================= GEÇMİŞ =================
-  useEffect(() => {
-    if (!user) return;
+useEffect(() => {
+  if (!user) return;
 
+  async function loadHistory() {
     const q = query(
       collection(db, "transactions"),
       where("toUid", "==", user.uid),
       where("type", "==", "gift"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(25) // ✅ HERKES İÇİN SABİT
     );
 
-    const unsub = onSnapshot(q, (snap) => {
-      const arr: any[] = [];
-      snap.forEach((doc) => arr.push({ id: doc.id, ...doc.data() }));
-      setHistory(arr);
-    });
+    const snap = await getDocs(q);
+    const arr: any[] = snap.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
 
-    return () => unsub();
-  }, [user]);
+    setHistory(arr);
+  }
+
+  loadHistory();
+}, [user]);
+
 
   // ================= BOZDUR (ŞİMDİLİK MOCK) =================
   function convertDiamonds(amount: number) {
@@ -103,51 +114,62 @@ export default function AssetsPage() {
 
   // ================= UI =================
   return (
-    <ScrollView style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={{ paddingVertical: 10 }}>
-        <Text style={{ fontSize: 16 }}>← Geri</Text>
-      </TouchableOpacity>
+  <View style={{ flex: 1, backgroundColor: "#F7F8FA" }}>
+    <TouchableOpacity
+      onPress={() => router.back()}
+      style={{ paddingVertical: 10, paddingHorizontal: 20 }}
+    >
+      <Text style={{ fontSize: 16 }}>← Geri</Text>
+    </TouchableOpacity>
 
-      {/* TAB BAR */}
-      <View style={styles.tabRow}>
-        {[
-          { key: "diamonds", label: "Elmaslarım" },
-          { key: "convert", label: "Bozdur" },
-          { key: "history", label: "Geçmiş" },
-        ].map((t: any) => (
-          <TouchableOpacity
-            key={t.key}
-            style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
-            onPress={() => setTab(t.key)}
+    {/* TAB BAR */}
+    <View style={[styles.tabRow, { paddingHorizontal: 20 }]}>
+      {[
+        { key: "diamonds", label: "Elmaslarım" },
+        { key: "convert", label: "Bozdur" },
+        { key: "history", label: "Geçmiş" },
+      ].map((t: any) => (
+        <TouchableOpacity
+          key={t.key}
+          style={[styles.tabBtn, tab === t.key && styles.tabBtnActive]}
+          onPress={() => setTab(t.key)}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              tab === t.key && styles.tabTextActive,
+            ]}
           >
-            <Text
-              style={[
-                styles.tabText,
-                tab === t.key && styles.tabTextActive,
-              ]}
-            >
-              {t.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+            {t.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
 
-     {tab === "diamonds" && (
-  <DiamondsTab
-    diamondBalance={diamonds}
-    styles={styles}
-  />
-)}
+    {/* ================= TAB CONTENT ================= */}
 
-      {tab === "convert" && (
-        <ConvertTab diamonds={diamonds} styles={styles} />
-      )}
+    {tab !== "history" && (
+      <ScrollView style={styles.container}>
+        {tab === "diamonds" && (
+          <DiamondsTab
+            diamondBalance={diamonds}
+            styles={styles}
+          />
+        )}
 
-      {tab === "history" && (
+        {tab === "convert" && (
+          <ConvertTab diamonds={diamonds} styles={styles} />
+        )}
+      </ScrollView>
+    )}
+
+    {tab === "history" && (
+      <View style={{ flex: 1 }}>
         <HistoryTab history={history} styles={styles} />
-      )}
-    </ScrollView>
-  );
+      </View>
+    )}
+  </View>
+);
 }
 
 const styles = StyleSheet.create({

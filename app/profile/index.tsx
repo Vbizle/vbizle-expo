@@ -28,6 +28,9 @@ import { getLevelInfo } from "@/src/utils/levelSystem";
 
 // Admin kontrolü
 import { isAdmin } from "@/app/admin/core/isAdmin";
+import ProfileFollowSection from "./social/ProfileFollowSection";
+
+
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -254,28 +257,30 @@ export default function ProfileScreen() {
         vipScore={vipScore}
         levelInfo={levelInfo}
       />
+      <ProfileFollowSection />
 
       {/* ⭐ Admin Paneli */}
-      {isAdmin(vbId) && (
-        <TouchableOpacity
-          onPress={() => router.push("/admin")}
-          style={styles.adminBtn}
-        >
-          <Text style={styles.adminBtnText}>Admin Paneli</Text>
-        </TouchableOpacity>
-      )}
+      <View style={styles.topActionsRow}>
+  {isAdmin(vbId) && (
+    <TouchableOpacity
+      onPress={() => router.push("/admin")}
+      style={styles.adminBtn}
+    >
+      <Text style={styles.adminBtnText}>Admin Paneli</Text>
+    </TouchableOpacity>
+  )}
 
-      {/* ⭐ Yeni: Bayi Paneli */}
-      {isDealerFlag && (
-        <TouchableOpacity
-          onPress={() => router.push("/dealer")}
-          style={styles.dealerBtn}
-        >
-          <Text style={styles.dealerBtnText}>VbBayim</Text>
-        </TouchableOpacity>
-      )}
+  {isDealerFlag && (
+    <TouchableOpacity
+      onPress={() => router.push("/dealer")}
+      style={styles.dealerBtn}
+    >
+      <Text style={styles.dealerBtnText}>VbBayim</Text>
+    </TouchableOpacity>
+  )}
+</View>
 
-      <ProfileWalletButtons />
+<ProfileWalletButtons />
 
       <CoverEditModal
         open={coverEditOpen}
@@ -320,31 +325,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  // Admin butonu
   adminBtn: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: "#1e3a8a",
-    borderRadius: 10,
-  },
-  adminBtnText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  position: "absolute",
+   bottom: 50,          // 🔹 VbBayim’in biraz üstü
+  left: 80,
+  paddingVertical: 6,
+  paddingHorizontal: 20,
+  backgroundColor: "#1e3a8a",
+  borderRadius: 10,
+  zIndex: 10,
+},
+adminBtnText: {
+  color: "white",
+  fontSize: 9,
+  fontWeight: "600",
+},
+
 
   // Bayi butonu
   dealerBtn: {
-    marginTop: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    backgroundColor: "#7c3aed",
-    borderRadius: 10,
-  },
-  dealerBtnText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  position: "absolute",
+  bottom: 38,          // 🔹 marginTop -79’un görsel karşılığı
+  left: 85,         // 🔹 marginLeft 280’un güvenli hali
+  paddingVertical: 10,
+  paddingHorizontal: 20,
+  backgroundColor: "#7c3aed",
+  borderRadius: 12,
+  zIndex: 10,
+},
+dealerBtnText: {
+  color: "white",
+  fontSize: 16,
+  fontWeight: "600",
+},
 }); 

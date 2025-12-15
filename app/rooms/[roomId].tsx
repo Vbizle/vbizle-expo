@@ -15,6 +15,7 @@ import CameraSection from "../../src/components/(CameraSection)";
 import ChatInput from "../../src/components/ChatInputNative";
 import ChatSection from "../../src/components/ChatSectionNative";
 import OnlineUsers from "../../src/components/OnlineUsersNative";
+import ProfilePopup from "../../src/components/ProfilePopup"; // ✅ EKLENDİ
 import RoomHeader from "../../src/components/RoomHeaderNative";
 import YoutubeSectionNative from "../../src/components/YoutubeSectionNative";
 
@@ -37,6 +38,21 @@ export default function RoomPage() {
 
   const [showOnline, setShowOnline] = useState(false);
 
+  /* 🔥 PROFILE POPUP STATE (YENİ) */
+  const [profileUser, setProfileUser] = useState<any>(null);
+  const [profileVisible, setProfileVisible] = useState(false);
+
+  function openUserProfile(u: any) {
+    if (!u?.uid) return;
+    setProfileUser(u);
+    setProfileVisible(true);
+  }
+
+  function closeUserProfile() {
+    setProfileVisible(false);
+    setProfileUser(null);
+  }
+
   if (loadingRoom || loadingProfile) {
     return (
       <View style={styles.center}>
@@ -56,36 +72,35 @@ export default function RoomPage() {
   return (
     <View style={styles.container}>
       <RoomHeader
-  room={room}
-  user={user}
-  onOnlineClick={() => setShowOnline(true)}
+        room={room}
+        user={user}
+        onOnlineClick={() => setShowOnline(true)}
 
-  // 🔥 HOST – oda adı / resmi düzenleme
-  onEditClick={() => {
-    console.log("EDIT ROOM CLICK");
-    // ileride: RoomEditModal açılacak
-  }}
+        // 🔥 HOST – oda adı / resmi düzenleme
+        onEditClick={() => {
+          console.log("EDIT ROOM CLICK");
+        }}
 
-  // 🔥 HOST – YouTube arama
-  onSearchClick={() => {
-    console.log("YOUTUBE SEARCH CLICK");
-    // ileride: YoutubeSearchModal açılacak
-  }}
+        // 🔥 HOST – YouTube arama
+        onSearchClick={() => {
+          console.log("YOUTUBE SEARCH CLICK");
+        }}
 
-  // 🔥 HOST – bağış paneli
-  onDonationClick={() => {
-    console.log("DONATION PANEL CLICK");
-    // ileride: DonationPanel açılacak
-  }}
-/>
-
+        // 🔥 HOST – bağış paneli
+        onDonationClick={() => {
+          console.log("DONATION PANEL CLICK");
+        }}
+      />
 
       <YoutubeSectionNative room={room} user={user} />
 
       <CameraSection room={room} user={user} roomId={safeRoomId} />
 
       <View style={styles.chatWrapper}>
-        <ChatSection messages={messages} />
+        <ChatSection
+          messages={messages}
+          onUserClick={openUserProfile} // ✅ EN KRİTİK SATIR
+        />
         <ChatInput
           newMsg={newMsg}
           setNewMsg={setNewMsg}
@@ -98,6 +113,17 @@ export default function RoomPage() {
           visible={showOnline}
           room={room}
           onClose={() => setShowOnline(false)}
+        />
+      )}
+
+      {/* 🔥 PROFILE POPUP (YENİ) */}
+      {profileVisible && profileUser && (
+        <ProfilePopup
+          visible={profileVisible}
+          user={profileUser}
+          roomId={safeRoomId}
+          isOwner={user.uid === room.ownerId}
+          onClose={closeUserProfile}
         />
       )}
     </View>
