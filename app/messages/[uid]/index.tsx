@@ -95,13 +95,18 @@ export default function DirectMessagePage() {
       const snap = await getDoc(doc(db, "users", String(uid)));
       if (snap.exists()) {
         const d = snap.data();
-        setOtherUser({
-          uid,
-          name: d.username,
-          avatar: d.avatar || "",
-          online: d.online ?? false,
-          lastSeen: d.lastSeen || null,
-        });
+       setOtherUser({
+  uid,
+  name: d.username,
+  avatar: d.avatar || "",
+  online: d.online ?? false,
+  lastSeen: d.lastSeen || null,
+
+  // 🔥 ROOT / ROLE BİLGİLERİ (DM HEADER İÇİN ZORUNLU)
+  vbId: d.vbId || null,
+  role: d.role || null,
+  roles: d.roles || null,
+});
       }
     }
     load();

@@ -23,8 +23,10 @@ import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 
 // Hooks
 import { usePresence } from "@/src/(hooks)/usePresence";
+import { SystemInboxProvider } from "@/src/(providers)/SystemInboxProvider";
 import { useLocationAfterAuth } from "../location";
 import "../location/locationTask";
+
 
 
 
@@ -181,9 +183,13 @@ export default function Layout() {
           {/* ⭐ GLOBAL VIP + LEVEL CANLI SİSTEM */}
           <UserLiveDataProvider>
 
-            <RoomProvider>
-              <LayoutInner />
-            </RoomProvider>
+             <SystemInboxProvider>
+
+              <RoomProvider>
+                <LayoutInner />
+              </RoomProvider>
+
+            </SystemInboxProvider>
 
           </UserLiveDataProvider>
 

@@ -15,6 +15,10 @@ export default function DmUserStatusHeader({
   setMetaSeen,
 }) {
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
+  const isRootUser =
+    otherUser?.vbId === "VB-1" ||
+    otherUser?.role === "root" ||
+    otherUser?.roles?.root === true;
 
   // 🔥 LastSeen formatlama fonksiyonu
   function formatLastSeen(ts) {
@@ -157,34 +161,37 @@ const statusText = otherTyping
             />
           )}
 
-         {otherUser.online && <View style={styles.onlineDot} />}
+         {!isRootUser && otherUser.online && <View style={styles.onlineDot} />}
         </View>
 
         <View>
           <Text style={styles.name}>{otherUser.name}</Text>
 
-          <Text
-            style={
-              otherTyping
-                ? styles.typing
-                : otherUser.online
-                ? styles.onlineText
-                : { color: "#6E6E73", fontSize: 12 }
-            }
-          >
-            {otherTyping
-              ? "Yazıyor..."
-              : otherUser.online
-              ? "Çevrimiçi"
-              : lastSeenText}
+         {!isRootUser && (
+  <Text
+    style={
+      otherTyping
+        ? styles.typing
+        : otherUser.online
+        ? styles.onlineText
+        : { color: "#6E6E73", fontSize: 12 }
+    }
+  >
+    {otherTyping
+      ? "Yazıyor..."
+      : otherUser.online
+      ? "Çevrimiçi"
+      : lastSeenText}
 
-            {typeof distanceKm === "number" && distanceKm >= 0 && (
-              <Text style={{ color: "#6E6E73", fontSize: 12 }}>
-                {" · "}
-                {distanceKm < 1 ? "1.0" : distanceKm.toFixed(1)} km
-              </Text>
-            )}
-          </Text>
+    {typeof distanceKm === "number" && distanceKm >= 0 && (
+      <Text style={{ color: "#6E6E73", fontSize: 12 }}>
+        {" · "}
+        {distanceKm < 1 ? "1.0" : distanceKm.toFixed(1)} km
+      </Text>
+    )}
+  </Text>
+)}
+
         </View>
       </TouchableOpacity>
     </View>

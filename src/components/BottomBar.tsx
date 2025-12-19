@@ -1,51 +1,32 @@
 import { usePathname, useRouter } from "expo-router";
-import { collectionGroup, onSnapshot } from "firebase/firestore";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import {
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { auth, db } from "../../firebase/firebaseConfig";
 
 // ⭐ SAFE AREA
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+// 🔔 SYSTEM + DM UNREAD
+import { useDmUnreadCount } from "@/src/(hooks)/useDmUnreadCount";
+import { useSystemInbox } from "@/src/(providers)/SystemInboxProvider";
 
 export default function BottomBar() {
   const path = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const [unread, setUnread] = useState(0);
+  // 🔹 SYSTEM UNREAD (VB, SVP, ROOT)
+  const { unread: systemUnread } = useSystemInbox();
 
-  useEffect(() => {
-  const user = auth.currentUser;
-  if (!user) return;
+  // 🔹 DM UNREAD (normal mesajlar)
+  const dmUnread = useDmUnreadCount();
 
-  const q = collectionGroup(db, "meta");
-
-  const unsub = onSnapshot(q, (snap) => {
-    let total = 0;
-
-    snap.forEach((d) => {
-      const data = d.data();
-      const refPath = d.ref.path;
-
-      // ❌ sistem mesajlarını TAMAMEN yok say
-      if (refPath.includes("/system")) return;
-      if (data?.type === "system") return;
-
-      if (data?.unread?.[user.uid]) {
-        total += data.unread[user.uid];
-      }
-    });
-
-    setUnread(total);
-  });
-
-  return () => unsub();
-}, []);
+  // 🔥 TOPLAM (ALT BAR SENKRON)
+  const totalUnread = systemUnread + dmUnread;
 
   const isTab = (href: string) => path === href;
 
@@ -59,6 +40,7 @@ export default function BottomBar() {
         },
       ]}
     >
+      {/* ANASAYFA */}
       <TouchableOpacity style={styles.tab} onPress={() => router.push("/")}>
         <Text style={[styles.icon, isTab("/") && styles.active]}>⬛</Text>
         <Text style={[styles.label, isTab("/") && styles.active]}>
@@ -66,13 +48,14 @@ export default function BottomBar() {
         </Text>
       </TouchableOpacity>
 
+      {/* MESAJLARIM */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/messages")}
       >
-        {unread > 0 && (
+        {totalUnread > 0 && (
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unread}</Text>
+            <Text style={styles.badgeText}>{totalUnread}</Text>
           </View>
         )}
 
@@ -85,6 +68,7 @@ export default function BottomBar() {
         </Text>
       </TouchableOpacity>
 
+      {/* PROFİL */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/profile")}
