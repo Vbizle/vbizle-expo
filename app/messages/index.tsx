@@ -1,6 +1,8 @@
 /* Tüm importlar aynı */
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import AppMessagesCard from "../system/AppMessagesCard";
+
 import {
   Image,
   Modal,
@@ -19,18 +21,18 @@ import {
   doc,
   getDoc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
-  setDoc,
-  where,
+  where
 } from "firebase/firestore";
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import { useUi } from "@/src/(providers)/UiProvider";
 
 // 📌 Uzun basma modalı
+import { onSnapshot } from "firebase/firestore";
 import DmOptionsModal from "./components/DmOptionsModal";
+
 
 
 /* ======================================================
@@ -113,126 +115,77 @@ export default function MessagesPage() {
   /* ======================================================
        DM LİSTESİ – HIDDEN + PIN + GERİ GETİRME
   ====================================================== */
-  useEffect(() => {
-    if (!me) return;
+ useEffect(() => {
+  if (!me) return;
 
-    async function load() {
-      const msgRef = collectionGroup(db, "messages");
-      const qRef = query(msgRef, orderBy("time", "desc"));
-      const snap = await getDocs(qRef);
+  const qRef = query(
+    collectionGroup(db, "messages"),
+    orderBy("time", "desc")
+  );
 
-      const conversations = {};
+  const unsub = onSnapshot(qRef, async (snap) => {
+    const conversations: any = {};
 
-      snap.forEach((d) => {
-        const data = d.data();
-        const convId = d.ref.parent.parent?.id;
-        if (!convId) return;
+    snap.forEach((d) => {
+      const data = d.data();
+      const convId = d.ref.parent.parent?.id;
+      if (!convId) return;
+      if (convId.startsWith("system")) return;
 
-        const [a, b] = convId.split("_");
-        const other = a === me.uid ? b : b === me.uid ? a : null;
-        if (!other) return;
+      const [a, b] = convId.split("_");
+      const other = a === me.uid ? b : b === me.uid ? a : null;
+      if (!other) return;
 
+      if (!conversations[convId]) {
         let preview = "";
         if (data.text) preview = data.text;
         else if (data.imgUrl) preview = "[Fotoğraf]";
         else if (data.voiceUrl) preview = "[Ses Kaydı]";
 
-        if (!conversations[convId]) {
-          conversations[convId] = {
-            convId,
-            otherId: other,
-            lastMsg: preview,
-            time: data.time,
-          };
-        }
-      });
-
-      const finalArr = [];
-
-      for (let convId in conversations) {
-        const item = conversations[convId];
-
-        const userSnap = await getDoc(doc(db, "users", item.otherId));
-        const uData = userSnap.data();
-        const avatar = uData.avatar || "https://i.hizliresim.com/lsn35tu.png";
-
-        const metaRef = doc(db, "dm", convId, "meta", "info");
-        const metaSnap = await getDoc(metaRef);
-        const meta = metaSnap.exists() ? metaSnap.data() : {};
-
-        const unread = meta.unread?.[me.uid] ?? 0;
-
-        const lastMsgTime = item.time?.seconds
-  ? item.time.seconds
-  : Math.floor((item.time ?? 0) / 1000);
-
-// Last seen → saniye formatı
-let lastSeenRaw = 0;
-if (meta.lastSeenTime?.seconds) {
-  lastSeenRaw = meta.lastSeenTime.seconds;
-} else if (typeof meta.lastSeenTime === "number") {
-  lastSeenRaw = Math.floor(meta.lastSeenTime / 1000);
-} else {
-  lastSeenRaw = 0;
-}
-
-const lastSeen = lastSeenRaw;
-        /* -------------------------------------------
-         🔥 HIDDEN ALGORİTMASI – %100 stabil sürüm
-        ---------------------------------------------*/
-      const isHidden =
-  meta.hiddenFor &&
-  typeof meta.hiddenFor === "object" &&
-  meta.hiddenFor[me.uid] === true;
-
-// DM gizlenmişse
-if (isHidden) {
-  // Yeni mesaj varsa geri getir
-  if (lastMsgTime > lastSeen) {
-    await setDoc(
-      metaRef,
-      {
-        hiddenFor: { [me.uid]: false },
-        lastSeenTime: lastMsgTime * 1000, // milisaniye kaydediyoruz
-      },
-      { merge: true }
-    );
-  } else {
-    // Yeni mesaj yok → gizli kalmalı
-    continue;
-  }
-}
-
-        finalArr.push({
-          ...item,
-          otherName: uData.username,
-          otherAvatar: avatar,
-          otherOnline: uData.online ?? false,
-          unread,
-          isPinned: meta.pinFor?.[me.uid] === true,
-          pinTime: meta.pinTime ?? 0,
-        });
+        conversations[convId] = {
+          convId,
+          otherId: other,
+          lastMsg: preview,
+          time: data.time,
+        };
       }
+    });
 
-      /* -----------------------------
-         📌 PIN SIRALAMA
-      ------------------------------*/
-      finalArr.sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
+    const finalArr = [];
 
-        return b.time.seconds - a.time.seconds;
+    for (const convId in conversations) {
+      const item = conversations[convId];
+
+      const userSnap = await getDoc(doc(db, "users", item.otherId));
+      const metaSnap = await getDoc(doc(db, "dm", convId, "meta", "info"));
+
+      const u = userSnap.data() || {};
+      const meta = metaSnap.data() || {};
+
+      finalArr.push({
+        ...item,
+        otherName: u.username,
+        otherAvatar: u.avatar,
+        otherOnline: u.online ?? false,
+        unread: meta.unread?.[me.uid] ?? 0,
+        isPinned: meta.pinFor?.[me.uid] === true,
+        pinTime: meta.pinTime ?? 0,
       });
-
-      setList(finalArr);
-      setLoading(false);
     }
 
-    load();
+    finalArr.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return b.time.seconds - a.time.seconds;
+    });
 
-    const unsub = onSnapshot(collectionGroup(db, "meta"), () => load());
-    return () => unsub();
-  }, [me, activeDM]);
+    setList(finalArr);
+    setLoading(false);
+  });
+
+  return () => unsub();
+}, [me]);
+
 
 
   /* ======================================================
@@ -329,6 +282,8 @@ if (isHidden) {
       ) : null}
 
       <ScrollView style={{ marginTop: 10 }}>
+         {/* 📢 SİSTEM MESAJLARI SABİT KART */}
+  <AppMessagesCard />
         {list.map((m, i) => (
           <TouchableOpacity
             key={i}

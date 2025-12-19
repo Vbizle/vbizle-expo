@@ -1,4 +1,5 @@
 import { auth } from "@/firebase/firebaseConfig";
+import { useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 
 import FollowCountersRow from "./components/FollowCountersRow";
@@ -11,46 +12,63 @@ import { unfollowUser } from "./services/followService";
 type Mode = "following" | "followers" | "friends";
 
 export default function ProfileFollowSection() {
-  const user = auth.currentUser;
-  const uid = user?.uid;
+  const { uid: routeUid } = useLocalSearchParams<{ uid?: string }>();
+  const viewerUid = auth.currentUser?.uid;
 
-  const counts = useFollowCounts(uid);
-  const { following, followers, friends } = useFollowLists(uid);
+  const profileUid = routeUid ?? viewerUid;
+  if (!profileUid || !viewerUid) return null;
+
+  const isOwner = profileUid === viewerUid;
+
+  const counts = useFollowCounts(profileUid);
+  const { following, followers, friends } = useFollowLists(profileUid);
 
   const [visible, setVisible] = useState(false);
   const [mode, setMode] = useState<Mode>("following");
-
-  if (!uid) return null;
 
   return (
     <>
       {/* === COUNTERS === */}
       <FollowCountersRow
         counts={counts}
-        onPressFollowing={() => {
-          setMode("following");
-          setVisible(true);
-        }}
-        onPressFriends={() => {
-          setMode("friends");
-          setVisible(true);
-        }}
-        onPressFollowers={() => {
-          setMode("followers");
-          setVisible(true);
-        }}
+        onPressFollowing={
+          isOwner
+            ? () => {
+                setMode("following");
+                setVisible(true);
+              }
+            : undefined
+        }
+        onPressFriends={
+          isOwner
+            ? () => {
+                setMode("friends");
+                setVisible(true);
+              }
+            : undefined
+        }
+        onPressFollowers={
+          isOwner
+            ? () => {
+                setMode("followers");
+                setVisible(true);
+              }
+            : undefined
+        }
       />
 
-      {/* === MODAL (TAB'LI) === */}
-      <FollowListModal
-        visible={visible}
-        mode={mode}              // hangi sayaçtan girildiyse
-        following={following}
-        friends={friends}
-        followers={followers}
-        onClose={() => setVisible(false)}
-        onUnfollow={(targetUid) => unfollowUser(targetUid)}
-      />
+      {/* === MODAL === */}
+      {isOwner && (
+        <FollowListModal
+          visible={visible}
+          mode={mode}
+          following={following}
+          friends={friends}
+          followers={followers}
+          onClose={() => setVisible(false)}
+          onUnfollow={(targetUid) => unfollowUser(targetUid)}
+        />
+      )}
     </>
   );
 }

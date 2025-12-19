@@ -10,6 +10,10 @@ const {
   isRoot,
   isAdmin,
 } = require("./core/helpers");
+const { writeVbLoadTransaction } = require("./transactions/writeTransaction");
+const { sendAppMessage } = require("./appMessages/appMessageEngine");
+const { vbLoaded } = require("./appMessages/messageTemplates");
+
 
 console.log("INDEX_LOADED: Functions loaded");
 
@@ -50,73 +54,79 @@ exports.VbAdminByVbId = onRequest(async (req, res) => {
   const callerInfo = await getUserShort(callerUid);
   const callerRef = db.collection("users").doc(callerUid);
 
-  try {
-    await db.runTransaction(async (trx) => {
-      const targetSnap = await trx.get(targetDoc.ref);
-      if (!targetSnap.exists) throw new Error("not-found");
+ try {
+  await db.runTransaction(async (trx) => {
+    const targetSnap = await trx.get(targetDoc.ref);
+    if (!targetSnap.exists) throw new Error("not-found");
 
-      const target = targetSnap.data();
+    const target = targetSnap.data();
 
-      /* ================================
-         BAYİ YÜKLEMESİ
-      ================================= */
-      if (source === "dealer") {
-        const dealerSnap = await trx.get(callerRef);
-        const dealer = dealerSnap.data();
+    /* ================================
+       BAYİ YÜKLEMESİ
+    ================================= */
+    if (source === "dealer") {
+      const dealerSnap = await trx.get(callerRef);
+      const dealer = dealerSnap.data();
 
-        const wallet = dealer.dealerWallet ?? 0;
-        if (wallet < amt) throw new Error("dealer-insufficient-wallet");
+      const wallet = dealer.dealerWallet ?? 0;
+      if (wallet < amt) throw new Error("dealer-insufficient-wallet");
 
-        trx.update(callerRef, {
-          dealerWallet: wallet - amt,
-        });
+      trx.update(callerRef, {
+        dealerWallet: wallet - amt,
+      });
 
-        trx.set(db.collection("dealerHistory").doc(), {
-          dealerUid: callerUid,
-          toUid: targetDoc.id,
-          toVbId: normalized,
-          amount: amt,
-          createdAt: Date.now(),
-        });
-      }
-
-      /* ================================
-         VIP ARTACAK KAYNAKLAR
-         (ileride google_play eklenecek)
-      ================================= */
-      const isVipSource =
-        source === "dealer" || source === "google_play";
-
-      /* ================================
-         KULLANICI BAKİYESİ
-      ================================= */
-     trx.update(targetDoc.ref, {
-  // ✅ SATIN ALIM / ROOT / BAYİ → SADECE VB BAKİYE
-  vbBalance: (target.vbBalance ?? 0) + amt,
-
-  // ❌ vbTotalReceived ARTIK KULLANILMIYOR → SİLİNDİ
-
-  // (opsiyonel) VIP hala yüklemeyle artsın istiyorsan
-  vipScore: (target.vipScore ?? 0) + amt,
-
-  updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-});
-      trx.set(db.collection("loadHistory").doc(), {
-        type: "admin_load_vbid",
-        admin: callerInfo,
+      trx.set(db.collection("dealerHistory").doc(), {
+        dealerUid: callerUid,
         toUid: targetDoc.id,
         toVbId: normalized,
-        source: source || "root",
         amount: amt,
         createdAt: Date.now(),
       });
+    }
+
+    /* ================================
+       KULLANICI BAKİYESİ
+    ================================= */
+    trx.update(targetDoc.ref, {
+      // ✅ SATIN ALIM / ROOT / BAYİ → SADECE VB BAKİYE
+      vbBalance: (target.vbBalance ?? 0) + amt,
+
+      // (opsiyonel) VIP hala yüklemeyle artsın istiyorsan
+      vipScore: (target.vipScore ?? 0) + amt,
+
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    return res.json({ success: true });
-  } catch (err) {
-    console.error("VbAdminByVbId_ERROR:", err.message);
-    return res.status(400).json({ error: err.message });
-  }
+    trx.set(db.collection("loadHistory").doc(), {
+      type: "admin_load_vbid",
+      admin: callerInfo,
+      toUid: targetDoc.id,
+      toVbId: normalized,
+      source: source || "root",
+      amount: amt,
+      createdAt: Date.now(),
+    });
+  });
+
+  // 🔥 TRANSACTION TAMAMLANDI → EVENT WRITE (SVP BURADAN TETİKLENİR)
+  await writeVbLoadTransaction({
+    toUid: targetDoc.id,
+    toVbId: normalized,
+    amount: amt,
+    source: source === "dealer" ? "dealer" : "root",
+    fromUid: callerUid,
+  });
+  await sendAppMessage({
+  toUid: targetDoc.id,
+  ...vbLoaded(amt),
+});
+
+
+  return res.json({ success: true });
+} catch (err) {
+  console.error("VbAdminByVbId_ERROR:", err.message);
+  return res.status(400).json({ error: err.message });
+}
 });
 
 /* ============================================================
@@ -246,6 +256,23 @@ exports.sendDonation =
   require("./earnings/sendDonation").sendDonation;
 
 exports.convertDiamondToVB = require("./wallet/convertDiamondToVB");
+exports.syncUserRoles = require("./roles/syncUserRoles").syncUserRoles;
+// ==================================================
+// SVP ENGINE (YENİ)
+// ==================================================
+exports.onTransactionWrite =
+  require("./svp/svpEngine").onTransactionWrite;
+  exports.onDealerHistoryWrite =
+  require("./svp/svpEngine").onDealerHistoryWrite;
+  exports.runDailySvpDecay =
+  require("./svp/svpDecayScheduler").runDailySvpDecay;
+ exports.sendRootAnnouncement =
+  require("./systemDm/sendRootAnnouncement").sendRootAnnouncement;
+
+
+
+
+
 
 
 

@@ -20,24 +20,32 @@ export default function BottomBar() {
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+  const user = auth.currentUser;
+  if (!user) return;
 
-    const unsub = onSnapshot(collectionGroup(db, "meta"), (snap) => {
-      let total = 0;
+  const q = collectionGroup(db, "meta");
 
-      snap.forEach((d) => {
-        const data = d.data();
-        if (data?.unread?.[user.uid]) {
-          total += data.unread[user.uid];
-        }
-      });
+  const unsub = onSnapshot(q, (snap) => {
+    let total = 0;
 
-      setUnread(total);
+    snap.forEach((d) => {
+      const data = d.data();
+      const refPath = d.ref.path;
+
+      // ❌ sistem mesajlarını TAMAMEN yok say
+      if (refPath.includes("/system")) return;
+      if (data?.type === "system") return;
+
+      if (data?.unread?.[user.uid]) {
+        total += data.unread[user.uid];
+      }
     });
 
-    return () => unsub();
-  }, []);
+    setUnread(total);
+  });
+
+  return () => unsub();
+}, []);
 
   const isTab = (href: string) => path === href;
 

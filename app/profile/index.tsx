@@ -28,9 +28,8 @@ import { getLevelInfo } from "@/src/utils/levelSystem";
 
 // Admin kontrolü
 import { isAdmin } from "@/app/admin/core/isAdmin";
+import { LinearGradient } from "expo-linear-gradient";
 import ProfileFollowSection from "./social/ProfileFollowSection";
-
-
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -239,6 +238,8 @@ export default function ProfileScreen() {
       <ProfileTopBar onLogout={logout} />
 
       <ProfileHeader
+      uid={user?.uid}                 // ✅ EKLE
+  isDealer={isDealerFlag}         // ✅ EKLE
         avatar={avatar}
         username={username}
         vbId={vbId}
@@ -270,13 +271,24 @@ export default function ProfileScreen() {
     </TouchableOpacity>
   )}
 
-  {isDealerFlag && (
-    <TouchableOpacity
-      onPress={() => router.push("/dealer")}
+ {isDealerFlag && (
+  <TouchableOpacity
+    onPress={() => router.push("/dealer")}
+    activeOpacity={0.85}
+    style={{ position: "absolute", bottom: 48, left: 85, zIndex: 10 }}
+  >
+    <LinearGradient
+      colors={["#F5D98B", "#D4AF37", "#B8962E"]} // 🟡 metalik altın
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
       style={styles.dealerBtn}
     >
       <Text style={styles.dealerBtnText}>VbBayim</Text>
-    </TouchableOpacity>
+
+      {/* ✨ premium gloss */}
+      <View style={styles.dealerGloss} />
+    </LinearGradient>
+  </TouchableOpacity>
   )}
 </View>
 
@@ -344,18 +356,35 @@ adminBtnText: {
 
   // Bayi butonu
   dealerBtn: {
-  position: "absolute",
-  bottom: 38,          // 🔹 marginTop -79’un görsel karşılığı
-  left: 85,         // 🔹 marginLeft 280’un güvenli hali
-  paddingVertical: 10,
-  paddingHorizontal: 20,
-  backgroundColor: "#7c3aed",
-  borderRadius: 12,
-  zIndex: 10,
+  paddingVertical: 6,
+  paddingHorizontal: 22,
+  borderRadius: 14,
+
+  shadowColor: "#000",
+  shadowOpacity: 0.3,
+  shadowRadius: 6,
+  shadowOffset: { width: 0, height: 3 },
+  elevation: 5,
+
+  overflow: "hidden",
 },
+
 dealerBtnText: {
-  color: "white",
-  fontSize: 16,
-  fontWeight: "600",
+  color: "#2E2100",
+  fontSize: 14,
+  fontWeight: "800",
+  letterSpacing: 0.4,
+  textShadowColor: "rgba(255,255,255,0.55)",
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 1,
+},
+
+dealerGloss: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  height: "45%",
+  backgroundColor: "rgba(255,255,255,0.35)",
 },
 }); 

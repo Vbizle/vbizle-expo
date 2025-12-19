@@ -9,10 +9,14 @@ import {
 } from "react-native";
 
 import { getLevelBadge } from "@/app/components/level-badges/levelBadgeMap";
-import { getVipColor, getVipLabel, getVipRank } from "@/src/utils/vipSystem";
-
+import { auth } from "@/firebase/firebaseConfig";
+import UserBadgesRow from "@/src/badges/components/UserBadgesRow";
+import { useRealtimeUserBadges } from "@/src/badges/hooks/useRealtimeUserBadges";
+import { getVipColor, getVipRank } from "@/src/utils/vipSystem";
+import { LinearGradient } from "expo-linear-gradient";
 
 type Props = {
+  uid?: string;
   avatar: string;
   username: string;
   vbId: string;
@@ -23,8 +27,11 @@ type Props = {
   usernameEdit: boolean;
   savingUsername: boolean;
   vipScore: number;
+  distanceKm?: number | null;
 
-  // 🔧 SADECE TİP DÜZELTİLDİ (davranış aynı)
+
+  isDealer?: boolean; // ✅ SADECE BURADA
+
   levelInfo: {
     level: number;
     label: string;
@@ -37,12 +44,15 @@ type Props = {
   onUsernameSave: () => void;
   onCoverClick: () => void;
   onOpenCoverEdit: () => void;
+  isPublic?: boolean;
 };
 
 export default function ProfileHeader({
+  uid, 
   avatar,
   username,
   vbId,
+  distanceKm, 
   gender,
   age,
   nationality,
@@ -57,8 +67,28 @@ export default function ProfileHeader({
   onUsernameSave,
   onCoverClick,
   onOpenCoverEdit,
+  isPublic = false, // 🔴 EKLE
+   isDealer, // ✅ EKLE
 }: Props) {
+  console.log("🟢 ProfileHeader render uid:", uid);
+
   const hasGallery = gallery.filter(Boolean).length > 0;
+ const resolvedUid = isPublic
+  ? uid ?? vbId // 🔥 ziyaret edilen kullanıcı
+  : auth.currentUser?.uid;
+console.log("🔥 resolvedUid (FINAL):", resolvedUid);
+
+const { badges } = useRealtimeUserBadges(resolvedUid);
+// 🔒 PLATFORM ROOT (UI SEVİYESİ)
+const PLATFORM_ROOT_UID = "9G9jqVmQSdZXVD6B6ah8w8nJwDw2";
+
+const isUiRootUser =
+  resolvedUid === PLATFORM_ROOT_UID ||
+  vbId === "VB-1";
+  const isRootUser =
+  badges?.roles?.root === true || isUiRootUser;
+
+
 
   const genderSymbol =
     gender === "male"
@@ -76,37 +106,43 @@ export default function ProfileHeader({
 
   const showBadge = genderSymbol && age;
 
-  const vipRank = getVipRank(vipScore);
-  const vipColor = getVipColor(vipRank);
-  const LevelBadge = getLevelBadge(levelInfo.level);
+  const liveLevel = badges?.level ?? levelInfo.level;
+const liveVipScore = badges?.vipScore ?? vipScore;
+
+const vipRank = getVipRank(liveVipScore);
+const vipColor = getVipColor(vipRank);
+const LevelBadge = getLevelBadge(liveLevel);
+
 
 
   return (
     <View style={styles.wrapper}>
       {/* COVER */}
       <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={onCoverClick}
-        style={styles.coverContainer}
-      >
-        {hasGallery ? (
-          <Image source={{ uri: gallery[0] }} style={styles.coverImage} />
-        ) : (
-          <View style={styles.noCoverBox}>
-            <Text style={styles.noCoverText}>Henüz kapak fotoğrafı yok</Text>
-          </View>
-        )}
+  activeOpacity={0.9}
+  onPress={() => onCoverClick?.()}
+  style={styles.coverContainer}
+>
+  {hasGallery ? (
+    <Image source={{ uri: gallery[0] }} style={styles.coverImage} />
+  ) : (
+    <View style={styles.noCoverBox}>
+      <Text style={styles.noCoverText}>Henüz kapak fotoğrafı yok</Text>
+    </View>
+  )}
 
-        <TouchableOpacity
-          style={styles.coverCameraBtn}
-          onPress={(e) => {
-            e.stopPropagation?.();
-            onOpenCoverEdit();
-          }}
-        >
-          <Text style={styles.coverCameraIcon}>📷</Text>
-        </TouchableOpacity>
-      </TouchableOpacity>
+  {!isPublic && onOpenCoverEdit && (
+    <TouchableOpacity
+      style={styles.coverCameraBtn}
+      onPress={(e) => {
+        e.stopPropagation?.();
+        onOpenCoverEdit();
+      }}
+    >
+      <Text style={styles.coverCameraIcon}>📷</Text>
+    </TouchableOpacity>
+  )}
+</TouchableOpacity>
 
       {/* AVATAR */}
       <TouchableOpacity
@@ -125,27 +161,43 @@ export default function ProfileHeader({
       </TouchableOpacity>
 
       {/* USER INFO */}
-      <View style={styles.userInfo}>
-        {!usernameEdit ? (
-          <View style={styles.usernameRow}>
-            <TouchableOpacity onPress={onUsernameClick}>
-              <Text style={styles.username}>{username}</Text>
-            </TouchableOpacity>
+<View style={styles.userInfo}>
+  {!usernameEdit ? (
+    <View style={styles.usernameRow}>
+      {isPublic ? (
+        // 🔒 ZİYARETÇİ → TIKLANAMAZ
+        <Text style={styles.username}>{username}</Text>
+      ) : (
+        // 👤 KENDİ PROFİLİ → ESKİ DAVRANIŞ AYNI
+        <TouchableOpacity onPress={onUsernameClick}>
+          <Text style={styles.username}>{username}</Text>
+        </TouchableOpacity>
+      )}
+     {isRootUser && isPublic && (
+  <LinearGradient
+    colors={["#185ac4ff", "#f1f2f3ff", "#a82f2fff"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 0 }}
+    style={styles.officialBadge}
+  >
+    <Text style={styles.officialBadgeText}>✔ Resmi Hesap</Text>
+  </LinearGradient>
+)}
 
-            {showBadge ? (
-              <View style={[styles.badge, { backgroundColor: badgeColor }]}>
-                <Text style={styles.badgeText}>
-                  {genderSymbol}
-                  {age}
-                </Text>
-              </View>
-            ) : null}
+      {showBadge ? (
+        <View style={[styles.badge, { backgroundColor: badgeColor }]}>
+          <Text style={styles.badgeText}>
+            {genderSymbol}
+            {age}
+          </Text>
+        </View>
+      ) : null}
 
-            {nationality?.flag ? (
-              <Text style={styles.flagText}>{nationality.flag}</Text>
-            ) : null}
-          </View>
-        ) : (
+      {nationality?.flag ? (
+        <Text style={styles.flagText}>{nationality.flag}</Text>
+      ) : null}
+    </View>
+  ) : (
           <View style={styles.usernameEditBox}>
             <TextInput
               value={username}
@@ -167,39 +219,35 @@ export default function ProfileHeader({
           </View>
         )}
 
-        <Text style={styles.vbId}>ID: {vbId}</Text>
-      </View>
+   <Text style={styles.vbId}>
+  ID: {vbId}
 
-      {/* ⭐ LEVEL + VIP */}
-    <View style={styles.rankRow}>
-  {/* LV KAPSÜLÜ */}
-  <View
-    style={[
-      styles.levelTag,
-      {
-        backgroundColor: levelInfo.color,
-        flexDirection: "row",
-        alignItems: "center",
-      },
-    ]}
-  >
-    {LevelBadge && (
-      <View style={{ marginRight: 4, marginTop: 1 }}>
-        <LevelBadge size={11} />
-      </View>
+  {!isRootUser &&
+    typeof distanceKm === "number" &&
+    distanceKm >= 0 && (
+      <Text style={styles.distanceText}>
+        {" • "}
+        <Text style={styles.locationIcon}>📍Yakınlık</Text>{" "}
+        {distanceKm < 1 ? "1.0" : distanceKm.toFixed(1)}
+        {" km "}
+      </Text>
     )}
+</Text>
+      </View>
 
-    <Text style={styles.levelText}>{levelInfo.label}</Text>
+    {!isRootUser && (
+  <View style={styles.rankRow}>
+    <UserBadgesRow
+  levelInfo={levelInfo}
+  vipScore={liveVipScore}
+  roles={badges?.roles}   // SVIP, admin buradan
+  isDealer={isDealer}  
+  svpLevel={badges?.svp?.level ?? 0}   // 🔥 BAYİ SADECE BURADAN
+ />
   </View>
+)}
 
-  {/* LV – VIP ARASI BOŞLUK */}
-  <View style={{ width: 3 }} />
 
-  {/* VIP KAPSÜLÜ */}
-  <Text style={[styles.vipTag, { backgroundColor: vipColor }]}>
-    {getVipLabel(vipRank)}
-  </Text>
-</View>
     </View>
   );
 }
@@ -276,7 +324,7 @@ const styles = StyleSheet.create({
     marginTop: -54,
     alignItems: "flex-start",
     width: "100%",
-    paddingLeft: 95,
+    paddingLeft: 100,
   },
 
   rankRow: {
@@ -310,9 +358,21 @@ levelText: {
   },
 
   vbId: {
-    fontSize: 10,
-    color: "#6B7280",
-  },
+  fontSize: 11,
+  color: "#6B7280",
+  fontWeight: "500",
+},
+
+distanceText: {
+  fontWeight: "600",
+  color: "#111827",
+  fontSize: 13,
+},
+
+locationIcon: {
+  fontSize: 13,
+  marginRight: 2,
+},
 
   usernameRow: {
     flexDirection: "row",
@@ -372,4 +432,22 @@ levelText: {
     fontSize: 14,
     fontWeight: "600",
   },
+ officialBadge: {
+  borderRadius: 999,
+  paddingHorizontal: 12,
+  paddingVertical: 4,
+  marginLeft: 6,
+   marginTop: 6, 
+  borderWidth: 1,
+  borderColor: "rgba(32, 11, 109, 1)", // soft mavi çerçeve
+},
+officialBadgeText: {
+  fontSize: 11,
+  fontWeight: "800",
+  color: "#290909ff", // koyu mavi yazı
+  textShadowColor: "rgba(255,255,255,0.6)",
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 1,
+},
+
 });

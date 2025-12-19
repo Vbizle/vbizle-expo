@@ -2,14 +2,21 @@
 
 import { auth, db } from "@/firebase/firebaseConfig";
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    getDocs,
-    query,
-    serverTimestamp,
-    where,
+  addDoc,
+  collection,
+  deleteDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  where,
 } from "firebase/firestore";
+
+/* ======================================================
+   HELPERS
+====================================================== */
+function isValidUid(uid: any): uid is string {
+  return typeof uid === "string" && uid.trim().length > 0 && uid !== "undefined";
+}
 
 /* ======================================================
    COLLECTION
@@ -21,7 +28,10 @@ const FOLLOWS_COL = "follows";
 ====================================================== */
 export async function followUser(targetUid: string) {
   const me = auth.currentUser;
-  if (!me) throw new Error("Not authenticated");
+
+  if (!me || !isValidUid(me.uid) || !isValidUid(targetUid)) {
+    return;
+  }
   if (me.uid === targetUid) return;
 
   const q = query(
@@ -31,7 +41,7 @@ export async function followUser(targetUid: string) {
   );
 
   const snap = await getDocs(q);
-  if (!snap.empty) return; // zaten takip ediliyor
+  if (!snap.empty) return;
 
   await addDoc(collection(db, FOLLOWS_COL), {
     from: me.uid,
@@ -45,7 +55,10 @@ export async function followUser(targetUid: string) {
 ====================================================== */
 export async function unfollowUser(targetUid: string) {
   const me = auth.currentUser;
-  if (!me) throw new Error("Not authenticated");
+
+  if (!me || !isValidUid(me.uid) || !isValidUid(targetUid)) {
+    return;
+  }
 
   const q = query(
     collection(db, FOLLOWS_COL),
@@ -62,7 +75,10 @@ export async function unfollowUser(targetUid: string) {
 ====================================================== */
 export async function isFollowing(targetUid: string): Promise<boolean> {
   const me = auth.currentUser;
-  if (!me) return false;
+
+  if (!me || !isValidUid(me.uid) || !isValidUid(targetUid)) {
+    return false;
+  }
 
   const q = query(
     collection(db, FOLLOWS_COL),
@@ -78,6 +94,8 @@ export async function isFollowing(targetUid: string): Promise<boolean> {
    QUERY HELPERS
 ====================================================== */
 export function followersQuery(uid: string) {
+  if (!isValidUid(uid)) return null;
+
   return query(
     collection(db, FOLLOWS_COL),
     where("to", "==", uid)
@@ -85,6 +103,8 @@ export function followersQuery(uid: string) {
 }
 
 export function followingQuery(uid: string) {
+  if (!isValidUid(uid)) return null;
+
   return query(
     collection(db, FOLLOWS_COL),
     where("from", "==", uid)

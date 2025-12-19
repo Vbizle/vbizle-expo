@@ -82,15 +82,15 @@ const styles = StyleSheet.create({
 
   image: {
     width: "100%",
-    height: "100%",
+    height: "75%",
   },
 
   closeBtn: {
     position: "absolute",
-    top: 32,
-    right: 20,
-    width: 48,
-    height: 48,
+    top: 75,
+    right: 30,
+    width: 28,
+    height: 28,
     borderRadius: 24,
     backgroundColor: "#E5E7EB",  // ⭐ Premium gri buton
     justifyContent: "center",
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
 
   closeText: {
     color: "#1C1C1E",  // ⭐ Premium koyu text
-    fontSize: 26,
+    fontSize: 16,
     fontWeight: "600",
   },
 });

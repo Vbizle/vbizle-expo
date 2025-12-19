@@ -23,6 +23,10 @@ import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 
 // Hooks
 import { usePresence } from "@/src/(hooks)/usePresence";
+import { useLocationAfterAuth } from "../location";
+import "../location/locationTask";
+
+
 
 function LayoutInner() {
   const router = useRouter();
@@ -37,6 +41,21 @@ function LayoutInner() {
     Platform.OS === "android" ? StatusBar.currentHeight || 0 : 0;
 
   usePresence();
+  useLocationAfterAuth();
+   // 🔥 SADECE DEBUG İÇİN — BURAYA EKLE
+  useEffect(() => {
+  const t = setTimeout(() => {
+    console.log("🔥 FORCE reset + startLocationTracking()");
+
+    import("../location/locationService").then((m) => {
+      m.resetLocationTask().then(() => {
+        m.startLocationTracking();
+      });
+    });
+  }, 3000);
+
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
@@ -54,6 +73,7 @@ function LayoutInner() {
   const isDMPage =
     currentRoute.startsWith("/messages/") &&
     currentRoute.split("/").length === 3;
+const isSystemPage = currentRoute.startsWith("/system");
 
   // ------------------------------------------------------------
   // AUTH GUARD
@@ -143,7 +163,11 @@ function LayoutInner() {
 
       <MiniRoomBubble />
 
-      {user && !isRoomPage && !isDMPage && !isAuthPage && <BottomBar />}
+      {user &&
+  !isRoomPage &&
+  !isDMPage &&
+  !isSystemPage &&
+  !isAuthPage && <BottomBar />}
     </SafeAreaView>
   );
 }

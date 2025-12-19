@@ -34,21 +34,25 @@
       }
     },
 
-    "android": {
-      "package": "com.vbizle",
-      "permissions": [
-        "android.permission.INTERNET",
-        "android.permission.RECORD_AUDIO",
-        "android.permission.CAMERA",
-        "android.permission.MODIFY_AUDIO_SETTINGS",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
-      ],
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#000000"
-      }
-    },
+   "android": {
+  "package": "com.vbizle",
+  "permissions": [
+    "INTERNET",
+    "RECORD_AUDIO",
+    "CAMERA",
+    "MODIFY_AUDIO_SETTINGS",
+    "FOREGROUND_SERVICE",
+    "FOREGROUND_SERVICE_MICROPHONE",
+
+    "ACCESS_FINE_LOCATION",
+    "ACCESS_COARSE_LOCATION",
+    "ACCESS_BACKGROUND_LOCATION"
+  ],
+  "adaptiveIcon": {
+    "foregroundImage": "./assets/adaptive-icon.png",
+    "backgroundColor": "#000000"
+  }
+},
 
     "extra": {
       "LIVEKIT_URL": "wss://vbizle-mqeip5rb.livekit.cloud",
