@@ -36,16 +36,40 @@ exports.sendRootAnnouncement = onCall(
       );
     }
 
-    await sendAppMessage({
-      toUid: "ALL",
-      category: "announcement",
-      type: "root",
-      title,
-      body,
-      meta,        // 🔥 KRİTİK: aynen geçir
-      pinned: true,
-    });
+   await sendAppMessage({
+  toUid: "ALL",
 
+  // 🔥 MUTLAKA SYSTEM
+  category: "system",
+  type: "system",
+
+  // 🔥 AYIRT EDİCİ ALT TÜR
+  subtype: "announcement",
+
+  title,
+  body,
+  meta,
+  pinned: true,
+});
+// 🔔 UI'NIN TEK DİNLEDİĞİ YER
+const usersSnap = await admin.firestore().collection("users").get();
+const batch = admin.firestore().batch();
+
+usersSnap.docs.forEach((userDoc) => {
+  const inboxRef = admin.firestore()
+    .collection("systemInbox")
+    .doc(userDoc.id);
+
+ batch.set(
+  inboxRef,
+  {
+    unreadCount: admin.firestore.FieldValue.increment(1),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  },
+  { merge: true }
+);
+});
+await batch.commit();
     return { success: true };
   }
 );
