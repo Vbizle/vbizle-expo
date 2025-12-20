@@ -17,11 +17,15 @@ import FullscreenGallery from "../FullscreenGallery"; // ✅ ZATEN VAR
 import ProfileHeader from "../ProfileHeader";
 import UserProfileActions from "../social/components/UserProfileActions";
 import ProfileFollowSection from "../social/ProfileFollowSection";
+import TopSupportersButton from "../top-supporters/components/TopSupportersButton";
 import { useUserProfile } from "./hooks/useUserProfile";
+
+
 
 
 export default function UserProfileScreen() {
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
+    
 
   // 🔥 UID NORMALIZE
   const params = useLocalSearchParams<{ uid?: string | string[] }>();
@@ -158,9 +162,19 @@ console.log("🔥 UserProfileScreen data.uid:", data.uid);
       />
 
       {/* 🔢 TAKİP / ARKADAŞ / TAKİPÇİ */}
-      {!(isRootTarget && !isOwnProfile) && (
-        <ProfileFollowSection targetUid={targetUid} />
-      )}
+      {/* 🔢 TAKİP / ARKADAŞ / TAKİPÇİ */}
+{!(isRootTarget && !isOwnProfile) && (
+  <View style={{ marginBottom: 16 }}>
+    <ProfileFollowSection targetUid={targetUid} />
+  </View>
+)}
+      <View style={{ marginTop: 12, paddingHorizontal: 16 }}>
+  <TopSupportersButton uid={data.uid} />
+</View>
+        {/* ⭐ EN İYİLER */}
+      <View style={{ marginTop: 12, paddingHorizontal: 16 }}>
+       
+      </View>
 
       {/* 🔘 TAKİP / MESAJ */}
       {!isOwnProfile && (
@@ -175,7 +189,7 @@ console.log("🔥 UserProfileScreen data.uid:", data.uid);
         gallery={data.gallery}
         onClose={() => setFullScreenOpen(false)}
       />
-    </View>
+           </View>
   );
 }
 

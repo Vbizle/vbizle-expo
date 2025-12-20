@@ -30,6 +30,7 @@ import { getLevelInfo } from "@/src/utils/levelSystem";
 import { isAdmin } from "@/app/admin/core/isAdmin";
 import { LinearGradient } from "expo-linear-gradient";
 import ProfileFollowSection from "./social/ProfileFollowSection";
+import TopSupportersButton from "./top-supporters/components/TopSupportersButton";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -293,6 +294,8 @@ export default function ProfileScreen() {
 </View>
 
 <ProfileWalletButtons />
+<TopSupportersButton uid={user.uid} />
+
 
       <CoverEditModal
         open={coverEditOpen}

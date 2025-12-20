@@ -24,6 +24,7 @@ type Props = {
 
   svpLevel?: number; // 🆕 SVP 1–5
   isDealer?: boolean; // 👈 SADECE BUNU EKLİYORUZ
+  wrap?: boolean; // 🔥 SADECE TOP LIST İÇİN
 };
 
 export default function UserBadgesRow({
@@ -32,6 +33,7 @@ export default function UserBadgesRow({
   roles,
   svpLevel = 0,
   isDealer,
+  wrap,
 }: Props) {
   const vipRank = getVipRank(vipScore);
   const vipColor = getVipColor(vipRank);
@@ -47,7 +49,12 @@ export default function UserBadgesRow({
   });
 
   return (
-    <View style={styles.row}>
+    <View
+  style={[
+    styles.row,
+    wrap === true && styles.wrapRow,
+  ]}
+>
       {/* LV KAPSÜLÜ */}
       <View
         style={[
@@ -103,6 +110,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  wrapRow: {
+    flexWrap: "wrap",
+    rowGap: 4,        // alt satır boşluğu
   },
 
   /* =========================

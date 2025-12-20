@@ -3,7 +3,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
 type UserBadgesData = {
-  level?: number;
+  vbTotalSent?: number;   // 🔥 LEVEL İÇİN TEK GERÇEK KAYNAK
   vipScore?: number;
   svp?: {
     level?: number;
@@ -14,6 +14,7 @@ type UserBadgesData = {
     dealer?: boolean;
     root?: boolean;
     svip?: boolean;
+    admin?: boolean;
   };
 };
 
@@ -41,24 +42,26 @@ export function useRealtimeUserBadges(uid?: string) {
 
         const d: any = snap.data();
 
-        // 🔍 DEBUG — SVP DAHİL TAM GÖRÜNTÜ
+        // 🔍 DEBUG
         console.log("🔥 realtime badges", {
           uid,
-          roles: d.roles,
+          vbTotalSent: d.vbTotalSent,
+          vipScore: d.vipScore,
           svp: d.svp,
+          roles: d.roles,
         });
 
         setBadges({
-          // 🔹 LV sistemi (mevcut yapı bozulmaz)
-          level: d.level ?? undefined,
+          // 🔥 LEVEL ARTIK BURADAN OKUNUR
+          vbTotalSent: d.vbTotalSent ?? 0,
 
-          // 🔹 VIP sistemi
-          vipScore: d.vipScore ?? undefined,
+          // VIP
+          vipScore: d.vipScore ?? 0,
 
-          // 🟣 SVP SİSTEMİ (ASLINDA EKSİK OLAN)
+          // SVP
           svp: d.svp ?? undefined,
 
-          // 🔹 Roller
+          // Roller
           roles: d.roles || {},
         });
 
