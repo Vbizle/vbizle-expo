@@ -21,8 +21,7 @@ type Props = {
 };
 
 export default function TopSupportersModal({ open, uid, onClose }: Props) {
-  console.log("🏆 TopSupportersModal uid:", uid);
-
+  
   const { list, loading } = useTopSupporters(uid);
   const translateY = useRef(new Animated.Value(0)).current;
 
@@ -112,7 +111,7 @@ const styles = StyleSheet.create({
     right: 12,
     bottom: 12,
     top: 90,
-    backgroundColor: "#EEF2FF",
+    backgroundColor: "#eff1f8fb",
     borderRadius: 22,
     padding: 12,
 

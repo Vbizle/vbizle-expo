@@ -49,9 +49,11 @@ export default function UserPreviewCard({
             try {
               setSaving(true);
 
-              await updateDoc(doc(db, "users", preview.uid), {
-                isDealer: makeDealer,
-              });
+             await updateDoc(doc(db, "users", preview.uid), {
+  isDealer: makeDealer,
+  "roles.dealer": makeDealer,
+});
+
 
               Alert.alert(
                 "Başarılı",

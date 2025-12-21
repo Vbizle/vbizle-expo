@@ -28,7 +28,11 @@ import { getLevelInfo } from "@/src/utils/levelSystem";
 
 // Admin kontrolü
 import { isAdmin } from "@/app/admin/core/isAdmin";
-import { LinearGradient } from "expo-linear-gradient";
+import MarketEntry from "@/app/market/MarketEntry";
+import MarketModal from "@/app/market/MarketModal";
+import { ScrollView } from "react-native";
+import BackpackEntry from "./backpack/BackpackEntry";
+import BackpackModal from "./backpack/BackpackModal";
 import ProfileFollowSection from "./social/ProfileFollowSection";
 import TopSupportersButton from "./top-supporters/components/TopSupportersButton";
 
@@ -60,6 +64,10 @@ export default function ProfileScreen() {
 
   // ⭐ EKLENDİ — BAYİ FLAG
   const [isDealerFlag, setIsDealerFlag] = useState(false);
+  const [backpackOpen, setBackpackOpen] = useState(false);
+  const [marketOpen, setMarketOpen] = useState(false);
+
+
 
   // ==========================================================
   // PROFİL YÜKLE
@@ -228,73 +236,68 @@ export default function ProfileScreen() {
   // ==========================================================
   // RENDER
   // ==========================================================
-  return (
-    <View style={styles.container}>
-      {notice ? (
-        <View style={styles.noticeBox}>
-          <Text style={styles.noticeText}>{notice}</Text>
-        </View>
-      ) : null}
+ return (
+  <View style={styles.container}>
+    {notice ? (
+      <View style={styles.noticeBox}>
+        <Text style={styles.noticeText}>{notice}</Text>
+      </View>
+    ) : null}
 
-      <ProfileTopBar onLogout={logout} />
+    {/* ❗ SABİT KALSIN */}
+    <ProfileTopBar
+  onLogout={logout}
+  isDealer={isDealerFlag}
+/>
 
-      <ProfileHeader
-      uid={user?.uid}                 // ✅ EKLE
-  isDealer={isDealerFlag}         // ✅ EKLE
-        avatar={avatar}
-        username={username}
-        vbId={vbId}
-        gender={gender}
-        age={age}
-        nationality={nationality}
-        gallery={gallery}
-        usernameEdit={usernameEdit}
-        savingUsername={saving}
-        onAvatarChange={handleAvatarUpload}
-        onUsernameClick={() => setUsernameEdit(true)}
-        onUsernameChange={setUsername}
-        onUsernameSave={saveUsername}
-        onCoverClick={() => hasGallery && setFullScreenOpen(true)}
-        onOpenCoverEdit={() => setCoverEditOpen(true)}
-        vipScore={vipScore}
-        levelInfo={levelInfo}
-      />
-      <ProfileFollowSection />
+    {/* 👇 SCROLL BAŞLIYOR */}
+   <ScrollView
+  showsVerticalScrollIndicator={false}
+  contentContainerStyle={{ paddingBottom: 120 }}
+>
+  <View style={{ width: "100%", alignItems: "center" }}>
+    <ProfileHeader
+      uid={user?.uid}
+      isDealer={isDealerFlag}
+      avatar={avatar}
+      username={username}
+      vbId={vbId}
+      gender={gender}
+      age={age}
+      nationality={nationality}
+      gallery={gallery}
+      usernameEdit={usernameEdit}
+      savingUsername={saving}
+      onAvatarChange={handleAvatarUpload}
+      onUsernameClick={() => setUsernameEdit(true)}
+      onUsernameChange={setUsername}
+      onUsernameSave={saveUsername}
+      onCoverClick={() => hasGallery && setFullScreenOpen(true)}
+      onOpenCoverEdit={() => setCoverEditOpen(true)}
+      vipScore={vipScore}
+      levelInfo={levelInfo}
+    />
 
-      {/* ⭐ Admin Paneli */}
-      <View style={styles.topActionsRow}>
-  {isAdmin(vbId) && (
-    <TouchableOpacity
-      onPress={() => router.push("/admin")}
-      style={styles.adminBtn}
-    >
-      <Text style={styles.adminBtnText}>Admin Paneli</Text>
-    </TouchableOpacity>
-  )}
+    <ProfileFollowSection />
 
- {isDealerFlag && (
-  <TouchableOpacity
-    onPress={() => router.push("/dealer")}
-    activeOpacity={0.85}
-    style={{ position: "absolute", bottom: 48, left: 85, zIndex: 10 }}
-  >
-    <LinearGradient
-      colors={["#F5D98B", "#D4AF37", "#B8962E"]} // 🟡 metalik altın
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
-      style={styles.dealerBtn}
-    >
-      <Text style={styles.dealerBtnText}>VbBayim</Text>
+    <View style={styles.topActionsRow}>
+      {isAdmin(vbId) && (
+        <TouchableOpacity
+          onPress={() => router.push("/admin")}
+          style={styles.adminBtn}
+        >
+          <Text style={styles.adminBtnText}>Admin Paneli</Text>
+        </TouchableOpacity>
+      )}
 
-      {/* ✨ premium gloss */}
-      <View style={styles.dealerGloss} />
-    </LinearGradient>
-  </TouchableOpacity>
-  )}
-</View>
+          </View>
 
-<ProfileWalletButtons />
-<TopSupportersButton uid={user.uid} />
+    <ProfileWalletButtons />
+    <TopSupportersButton uid={user.uid} />
+    <BackpackEntry onPress={() => setBackpackOpen(true)} />
+    <MarketEntry onPress={() => setMarketOpen(true)} />
+  </View>
+</ScrollView>
 
 
       <CoverEditModal
@@ -309,6 +312,14 @@ export default function ProfileScreen() {
         gallery={gallery}
         onClose={() => setFullScreenOpen(false)}
       />
+      <BackpackModal
+  visible={backpackOpen}
+  onClose={() => setBackpackOpen(false)}
+/>
+<MarketModal
+  visible={marketOpen}
+  onClose={() => setMarketOpen(false)}
+/>
     </View>
   );
 }
@@ -317,24 +328,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F2F2F7",
-    paddingTop: 40,
-    alignItems: "center",
-  },
+         },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F2F2F7",
   },
-  noticeBox: {
-    position: "absolute",
-    top: 40,
-    zIndex: 50,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "#2563eb",
-    borderRadius: 8,
-  },
+ noticeBox: {
+  position: "absolute",
+  top: 48, // 40 → 48 (notch / status bar için daha güvenli)
+  zIndex: 50,
+  paddingHorizontal: 16,
+  paddingVertical: 8,
+  backgroundColor: "#2563eb",
+  borderRadius: 8,
+},
   noticeText: {
     color: "#FFFFFF",
     fontSize: 15,
@@ -343,7 +352,7 @@ const styles = StyleSheet.create({
   adminBtn: {
   position: "absolute",
    bottom: 50,          // 🔹 VbBayim’in biraz üstü
-  left: 80,
+  right: 10,
   paddingVertical: 6,
   paddingHorizontal: 20,
   backgroundColor: "#1e3a8a",
@@ -390,4 +399,9 @@ dealerGloss: {
   height: "45%",
   backgroundColor: "rgba(255,255,255,0.35)",
 },
+topActionsRow: {
+  width: "100%",
+  height: 1, // absolute butonlar için referans alanı
+},
+
 }); 

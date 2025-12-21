@@ -1,3 +1,5 @@
+import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
   StyleSheet,
@@ -6,22 +8,71 @@ import {
   View,
 } from "react-native";
 
+
+
+
 type Props = {
   onLogout: () => void;
+  isDealer?: boolean;
 };
 
-export default function ProfileTopBar({ onLogout }: Props) {
+export default function ProfileTopBar({ onLogout, isDealer }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+   const router = useRouter();
 
   return (
     <View style={styles.container}>
       {/* Başlık */}
       <Text style={styles.title}>Profil</Text>
 
-      {/* Menü Butonu */}
-      <TouchableOpacity onPress={() => setMenuOpen((prev) => !prev)}>
-        <Text style={styles.menuIcon}>☰</Text>
-      </TouchableOpacity>
+     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+  {/* 🟡 BAYİ BUTONU — HAMBURGERİN SOLU */}
+  {isDealer && (
+  <TouchableOpacity
+    onPress={() => {
+      setMenuOpen(false);
+      router.push("/dealer");
+    }}
+    activeOpacity={0.85}
+  >
+    <LinearGradient
+      colors={["#F5D98B", "#D4AF37", "#B8962E"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={{
+        paddingVertical: 6,
+        paddingHorizontal: 18,
+        borderRadius: 16,
+
+        shadowColor: "#000",
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 3 },
+        elevation: 5,
+      }}
+    >
+      <Text
+        style={{
+          color: "#2E2100",
+          fontSize: 14,
+          fontWeight: "800",
+          letterSpacing: 0.4,
+          textShadowColor: "rgba(255,255,255,0.55)",
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 1,
+        }}
+      >
+        VbBayim
+      </Text>
+    </LinearGradient>
+  </TouchableOpacity>
+)}
+
+  {/* 🍔 HAMBURGER — YERİ AYNI */}
+  <TouchableOpacity onPress={() => setMenuOpen((prev) => !prev)}>
+    <Text style={styles.menuIcon}>☰</Text>
+  </TouchableOpacity>
+  </View>
 
       {/* Açılır Menü */}
       {menuOpen && (

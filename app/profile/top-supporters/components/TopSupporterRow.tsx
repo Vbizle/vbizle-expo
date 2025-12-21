@@ -3,9 +3,15 @@ import { useRouter } from "expo-router";
 import React from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { db } from "@/firebase/firebaseConfig";
 import UserBadgesRow from "@/src/badges/components/UserBadgesRow";
 import { useRealtimeUserBadges } from "@/src/badges/hooks/useRealtimeUserBadges";
+import { resolveDisplayProfile } from "@/src/premium/resolveDisplayProfile";
 import { getLevelInfo } from "@/src/utils/levelSystem";
+import { doc, onSnapshot } from "firebase/firestore";
+import { useEffect, useRef } from "react";
+import { Animated, Easing } from "react-native";
+
 
 type Props = {
   data: {
@@ -16,6 +22,8 @@ type Props = {
     age?: number;
     gender?: "male" | "female";
     country?: string;
+    premiumStatus?: any;
+
   };
   rank: number;
 };
@@ -29,16 +37,72 @@ export default function TopSupporterRow({ data, rank }: Props) {
   const isTop3 = rank <= 3;
   const PLATFORM_ROOT_UID = "9G9jqVmQSdZXVD6B6ah8w8nJwDw2";
 const isRootUser = data.supporterUid === PLATFORM_ROOT_UID;
+  // 🔴 BURAYA
+  const [liveUsername, setLiveUsername] = React.useState<string | undefined>(
+    data.username
+  );
+  const [liveAvatar, setLiveAvatar] = React.useState<string | undefined>(
+    data.avatar
+  );
+
 
 
   const { badges } = useRealtimeUserBadges(data.supporterUid);
   const levelInfo = getLevelInfo(badges?.vbTotalSent ?? 0);
+const displayProfile = resolveDisplayProfile({
+  username: liveUsername || "Kullanıcı",
+  avatarUrl: liveAvatar || "",
+  premiumStatus: data.premiumStatus,
+});
+
+  const canPress = !displayProfile.isMasked;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+ 
+
+useEffect(() => {
+  Animated.loop(
+    Animated.timing(shimmerAnim, {
+      toValue: 1,
+      duration: 3200,
+easing: Easing.inOut(Easing.linear),
+      useNativeDriver: true,
+    })
+  ).start();
+}, []);
+useEffect(() => {
+  if (!data.supporterUid) return;
+
+  const ref = doc(db, "users", data.supporterUid);
+
+  const unsub = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+
+    const d = snap.data();
+    setLiveUsername(d.username);
+    setLiveAvatar(d.avatar);
+  });
+
+  return unsub;
+}, [data.supporterUid, liveUsername, liveAvatar]);
 
 
+const shimmerTranslate = shimmerAnim.interpolate({
+  inputRange: [0, 1],
+  outputRange: [-120, 120],
+});
 
-  const avatarSource = data.avatar
-    ? { uri: data.avatar }
+  const handlePressProfile = () => {
+  if (!canPress) return;
+  router.push(`/profile/user/${data.supporterUid}`);
+};
+
+  const avatarSource =
+  displayProfile.isMasked && displayProfile.avatarSource
+    ? displayProfile.avatarSource
+    : liveAvatar
+    ? { uri: liveAvatar }
     : require("../../../../assets/icons/user-placeholder.png");
+
 
   /** 🔹 SOL SLOT */
   const RankSlot = () => {
@@ -62,9 +126,25 @@ const isRootUser = data.supporterUid === PLATFORM_ROOT_UID;
       <View style={styles.mid}>
         <View style={styles.topRow}>
           <View style={styles.nameRow}>
-            <Text style={styles.username} numberOfLines={1}>
-              {data.username || "Kullanıcı"}
-            </Text>
+           {displayProfile.isMasked ? (
+  <View style={styles.superUserWrapper}>
+    <LinearGradient
+      colors={["#020617", "#0f0707ff", "#020617"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 0 }}
+      style={styles.superUserBadge}
+    >
+      
+      <Text style={styles.superUserText} numberOfLines={1}>
+        {displayProfile.nickname}
+      </Text>
+    </LinearGradient>
+  </View>
+) : (
+  <Text style={styles.username} numberOfLines={1}>
+    {displayProfile.nickname}
+  </Text>
+)}
 
             {data.gender && data.age ? (
               <View
@@ -96,7 +176,7 @@ const isRootUser = data.supporterUid === PLATFORM_ROOT_UID;
         </View>
 
         {/* ROZETLER */}
-       {!isRootUser && (
+       {!isRootUser && !displayProfile.isMasked && (
   <View style={styles.badgeWrap}>
     <UserBadgesRow
       levelInfo={levelInfo}
@@ -120,27 +200,31 @@ const isRootUser = data.supporterUid === PLATFORM_ROOT_UID;
     const frame =
       rank === 1
         ? {
-            border: ["#f7d046", "#b8860b"],
-            inner: ["#ffcccf8e", "#f3c623"],
-            glow: "rgba(247,208,70,0.6)",
+            border: ["#f7d146f8", "#b8860b"],
+            inner: ["#f3f4f6ef", "#f3f4f6ef"],
+            glow: "rgba(143, 141, 136, 0.6)",
           }
         : rank === 2
         ? {
-            border: ["#f08f8c65", "#f08f8c71"],
-            inner: ["#8bb2daff", "#b7d1f1ff"],
+            border: ["#0a74866b", "#0a74866b"],
+            inner: ["#f3f4f6ef", "#f3f4f6ef"],
             glow: "rgba(207,211,216,0.6)",
           }
         : {
-            border: ["#0f0f0f49", "#0f0f0f49"],
-            inner: ["#d3f1ca7e", "#d3f1ca8e"],
-            glow: "rgba(205,127,50,0.6)",
+            border: ["#a79493a2", "#aa9696a2"],
+             inner: ["#f3f4f6ef", "#f3f4f6ef"],
+            glow: "rgba(202, 197, 191, 0.6)",
           };
 
     return (
-      <Pressable
-        onPress={() => router.push(`/profile/user/${data.supporterUid}`)}
-        style={{ marginBottom: 10 }}
-      >
+     <Pressable
+  disabled={!canPress}
+  onPress={handlePressProfile}
+  style={[
+    { marginBottom: 10 },
+  
+  ]}
+>
         {/* DIŞ ÇERÇEVE */}
         <LinearGradient
           colors={frame.border}
@@ -161,9 +245,12 @@ const isRootUser = data.supporterUid === PLATFORM_ROOT_UID;
   /* ===== NORMAL ===== */
   return (
     <Pressable
-      style={styles.row}
-      onPress={() => router.push(`/profile/user/${data.supporterUid}`)}
-    >
+  style={[
+    styles.row,
+    ]}
+  disabled={!canPress}
+  onPress={handlePressProfile}
+>
       {content}
     </Pressable>
   );
@@ -197,7 +284,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 1,
     marginBottom: 6,
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#f3f4f6ef",
      minHeight: 65, // 🔒 TOP ile görsel denge
   },
 
@@ -213,7 +300,7 @@ const styles = StyleSheet.create({
   rankText: {
     fontSize: 12,
     fontWeight: "800",
-    color: "#6B7280",
+    color: "#393d42f5",
   },
 
   /* AVATAR */
@@ -283,4 +370,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 2,
   },
+ 
+superUserWrapper: {
+  overflow: "hidden",
+  borderRadius: 14,
+},
+
+superUserBadge: {
+  paddingHorizontal: 12,
+  paddingVertical: 4,
+  borderRadius: 14,
+  justifyContent: "center",
+ },
+
+superUserText: {
+  color: "#ffffffff",
+  fontSize: 11,
+  fontWeight: "900",
+  letterSpacing: 0.4,
+},
+
+shimmerContainer: {
+  position: "absolute",
+  top: 0,
+  bottom: 0,
+  width: 50, // 🔥 genişlik önemli
+},
+
+shimmerGradient: {
+  flex: 1,
+  borderRadius: 25, // 👈 KENARLARI OVAL YAPAR
+},
+
 });

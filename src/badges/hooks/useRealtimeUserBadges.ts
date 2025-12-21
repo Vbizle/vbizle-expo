@@ -41,6 +41,7 @@ export function useRealtimeUserBadges(uid?: string) {
         }
 
         const d: any = snap.data();
+        
 
         // 🔍 DEBUG
         console.log("🔥 realtime badges", {

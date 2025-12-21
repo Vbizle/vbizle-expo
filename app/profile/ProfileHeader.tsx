@@ -115,34 +115,51 @@ const LevelBadge = getLevelBadge(liveLevel);
 
 
 
-  return (
-    <View style={styles.wrapper}>
-      {/* COVER */}
-      <TouchableOpacity
-  activeOpacity={0.9}
-  onPress={() => onCoverClick?.()}
-  style={styles.coverContainer}
->
-  {hasGallery ? (
-    <Image source={{ uri: gallery[0] }} style={styles.coverImage} />
-  ) : (
-    <View style={styles.noCoverBox}>
-      <Text style={styles.noCoverText}>Henüz kapak fotoğrafı yok</Text>
-    </View>
-  )}
-
-  {!isPublic && onOpenCoverEdit && (
+ return (
+  <View style={styles.wrapper}>
+    {/* COVER */}
     <TouchableOpacity
-      style={styles.coverCameraBtn}
-      onPress={(e) => {
-        e.stopPropagation?.();
-        onOpenCoverEdit();
-      }}
+      activeOpacity={0.9}
+      onPress={() => onCoverClick?.()}
+      style={styles.coverContainer}
     >
-      <Text style={styles.coverCameraIcon}>📷</Text>
+      {hasGallery ? (
+        <View style={styles.coverInner}>
+          {/* 🔥 ARKA PLAN (blur + cover) */}
+          <Image
+            source={{ uri: gallery[0] }}
+            style={styles.coverBackground}
+            resizeMode="cover"
+            blurRadius={20}
+          />
+
+          {/* 🎯 ÖN PLAN (net + kırpma yok) */}
+          <Image
+            source={{ uri: gallery[0] }}
+            style={styles.coverImage}
+            resizeMode="contain"
+          />
+        </View>
+      ) : (
+        <View style={styles.noCoverBox}>
+          <Text style={styles.noCoverText}>
+            Henüz kapak fotoğrafı yok
+          </Text>
+        </View>
+      )}
+
+      {!isPublic && onOpenCoverEdit && (
+        <TouchableOpacity
+          style={styles.coverCameraBtn}
+          onPress={(e) => {
+            e.stopPropagation?.();
+            onOpenCoverEdit();
+          }}
+        >
+          <Text style={styles.coverCameraIcon}>📷</Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
-  )}
-</TouchableOpacity>
 
       {/* AVATAR */}
       <TouchableOpacity
@@ -169,9 +186,15 @@ const LevelBadge = getLevelBadge(liveLevel);
         <Text style={styles.username}>{username}</Text>
       ) : (
         // 👤 KENDİ PROFİLİ → ESKİ DAVRANIŞ AYNI
-        <TouchableOpacity onPress={onUsernameClick}>
-          <Text style={styles.username}>{username}</Text>
-        </TouchableOpacity>
+      <TouchableOpacity onPress={onUsernameClick}>
+  <View style={styles.usernameEditWrapper}>
+    <Text style={styles.username}>{username}</Text>
+
+    <Text style={styles.editIconSuperscript}>
+      ✏️
+    </Text>
+  </View>
+</TouchableOpacity>
       )}
      {isRootUser && isPublic && (
   <LinearGradient
@@ -205,6 +228,7 @@ const LevelBadge = getLevelBadge(liveLevel);
               style={styles.usernameInput}
               placeholder="Kullanıcı adı"
               placeholderTextColor="#A1A1AA"
+              maxLength={20}
             />
 
             <TouchableOpacity
@@ -260,22 +284,32 @@ const styles = StyleSheet.create({
     position: "relative",
   },
 
-  coverContainer: {
-    width: "100%",
-    height: 160,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-    overflow: "hidden",
-    marginBottom: 0,
-    backgroundColor: "rgba(255,255,255,0.35)",
+ coverContainer: {
+  width: "100%",
+  height: 160,                 // ✅ eski boyut geri
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: "rgba(0,0,0,0.1)",
+  overflow: "hidden",
+  marginBottom: 0,
+  backgroundColor: "#F2F2F7",  // ✅ boşluk olursa şık dursun
+},
+// 👇 BURAYA EKLEDİN
+  coverInner: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
 
-  coverImage: {
+  coverBackground: {
+    ...StyleSheet.absoluteFillObject,
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
   },
+  coverImage: {
+    width: "100%",
+    height: "120%",
+      },
 
   noCoverBox: {
     flex: 1,
@@ -449,5 +483,16 @@ officialBadgeText: {
   textShadowOffset: { width: 0, height: 1 },
   textShadowRadius: 1,
 },
+usernameEditWrapper: {
+  flexDirection: "row",
+  alignItems: "flex-start", // 🔴 önemli
+},
 
+editIconSuperscript: {
+  fontSize: 11,        // küçük
+  opacity: 0.55,
+  marginLeft: 4,       // nickten biraz ayır
+  marginTop: 3,       // 🔥 yukarı kaldırır (üst sağ efekti)
+  transform: [{ scaleX: -1 }], // 👈 kalem ucu sola bakar
+},
 });
