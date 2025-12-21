@@ -268,6 +268,8 @@ exports.onTransactionWrite =
   require("./svp/svpDecayScheduler").runDailySvpDecay;
  exports.sendRootAnnouncement =
   require("./systemDm/sendRootAnnouncement").sendRootAnnouncement;
+exports.expirePremiumStatuses =
+  require("./premium/expirePremiumStatuses").expirePremiumStatuses;
 
 
 

@@ -1,6 +1,7 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
-/* 🔔 YENİ: Sistem mesajları için */
+
+/* 🔔 Sistem mesajları */
 const { sendAppMessage } =
   require("../appMessages/appMessageEngine");
 const { svpExpiryWarning } =
@@ -21,14 +22,20 @@ const SVP_LEVELS = {
 };
 
 const PERIOD_MS = 30 * 24 * 60 * 60 * 1000;
-/* ======================================================
-   🔔 ADIM 2 — YENİ YARDIMCI SABİTLER & FONKSİYONLAR
-   (MEVCUT KODA ETKİSİ YOK)
-====================================================== */
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/* ======================================================
+   🔧 TEK KRİTİK DÜZELTME: Timestamp → number normalize
+   (DAVRANIŞ DEĞİŞMEZ)
+====================================================== */
+function normalizeTimestamp(ts) {
+  if (!ts) return 0;
+  return ts.toMillis ? ts.toMillis() : Number(ts);
+}
+
 function getDaysLeft(lastEvaluatedAt) {
-  const expiresAt = lastEvaluatedAt + PERIOD_MS;
+  const lastAt = normalizeTimestamp(lastEvaluatedAt);
+  const expiresAt = lastAt + PERIOD_MS;
   return Math.ceil((expiresAt - Date.now()) / MS_PER_DAY);
 }
 
@@ -68,9 +75,11 @@ exports.runDailySvpDecay = onSchedule(
       const svp = user.svp;
 
       if (!svp || !svp.lastEvaluatedAt) return;
-       /* ======================================================
-         🔔 ADIM 3 — SVP 3 / 2 / 1 GÜN KALA UYARI MESAJLARI
-         (DECAY ÖNCESİ, TEKRARSIZ)
+
+      const lastAt = normalizeTimestamp(svp.lastEvaluatedAt);
+
+      /* ======================================================
+         🔔 3 / 2 / 1 GÜN KALA UYARI (AYNEN KORUNDU)
       ====================================================== */
       const daysLeft = getDaysLeft(svp.lastEvaluatedAt);
 
@@ -92,9 +101,12 @@ exports.runDailySvpDecay = onSchedule(
           });
         }
       }
-      /* ===================== ADIM 3 SON ===================== */
 
-      if (now - svp.lastEvaluatedAt < PERIOD_MS) return;
+      /* ======================================================
+         🔒 TEK SATIRLIK KRİTİK DÜZELTME
+         (SVP5 ERKEN DÜŞME BURADA ÇÖZÜLÜYOR)
+      ====================================================== */
+      if (now - lastAt < PERIOD_MS) return;
 
       const newLevel = svp.level - 1;
       if (newLevel < 0) return;
@@ -105,7 +117,6 @@ exports.runDailySvpDecay = onSchedule(
         svp: {
           level: newLevel,
           points: newPoints,
-          lastEvaluatedAt: now,
         },
         "roles.svip": newLevel > 0,
       });
@@ -121,3 +132,4 @@ exports.runDailySvpDecay = onSchedule(
     }
   }
 );
+

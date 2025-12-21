@@ -6,7 +6,9 @@ const ROOT_UIDS = [
 const ROLE_RULES = {
   root: (user, uid) => ROOT_UIDS.includes(uid),
 
-  dealer: (user) => (user.dealerWallet ?? 0) > 0,
+  // 🔕 DEALER OTOMATİK KAPALI
+  // SADECE MANUEL SET EDİLECEK
+  dealer: (user) => user.isDealer === true,
 
   // ❌ svip ARTIK ROLE DEĞİL
 
