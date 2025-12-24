@@ -270,6 +270,15 @@ exports.onTransactionWrite =
   require("./systemDm/sendRootAnnouncement").sendRootAnnouncement;
 exports.expirePremiumStatuses =
   require("./premium/expirePremiumStatuses").expirePremiumStatuses;
+// MARKET
+const market = require("./market");
+exports.purchaseMarketItem = market.purchaseMarketItem;
+exports.expireInventoryItems = require("./schedulers/expireInventoryItems")
+  .expireInventoryItems;
+  exports.presenceCleanup =
+  require("./schedulers/presenceCleanup").presenceCleanup;
+
+
 
 
 

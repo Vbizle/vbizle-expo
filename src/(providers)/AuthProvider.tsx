@@ -111,31 +111,7 @@ export default function AuthProvider({ children }: any) {
     return () => unsubscribe();
   }, []);
 
-  // ========================================================
-  // USER PRESENCE (MOBİL)
-  // ========================================================
-  useEffect(() => {
-    if (!firebaseUser) return;
-
-    const userRef = doc(db, "users", firebaseUser.uid);
-
-    const sub = AppState.addEventListener("change", async (state) => {
-      if (state === "active") {
-        // Uygulama ön plana geçmiş → online
-        await updateDoc(userRef, { online: true });
-      } else {
-        // Arka plan veya kapanma → offline + lastSeen güncelle
-        await updateDoc(userRef, {
-          online: false,
-          lastSeen: serverTimestamp(), // ⭐ EKLENDİ
-        });
-      }
-    });
-
-    return () => sub.remove();
-  }, [firebaseUser]);
-
-  // ========================================================
+   // ========================================================
   // VB CÜZDAN HOOK
   // ========================================================
   useVbWallet(firebaseUser);

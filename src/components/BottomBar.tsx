@@ -7,7 +7,6 @@ import {
   View,
 } from "react-native";
 
-// ⭐ SAFE AREA
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // 🔔 SYSTEM + DM UNREAD
@@ -19,13 +18,8 @@ export default function BottomBar() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  // 🔹 SYSTEM UNREAD (VB, SVP, ROOT)
   const { unread: systemUnread } = useSystemInbox();
-
-  // 🔹 DM UNREAD (normal mesajlar)
   const dmUnread = useDmUnreadCount();
-
-  // 🔥 TOPLAM (ALT BAR SENKRON)
   const totalUnread = systemUnread + dmUnread;
 
   const isTab = (href: string) => path === href;
@@ -40,15 +34,27 @@ export default function BottomBar() {
         },
       ]}
     >
-      {/* ANASAYFA */}
-      <TouchableOpacity style={styles.tab} onPress={() => router.push("/")}>
-        <Text style={[styles.icon, isTab("/") && styles.active]}>⬛</Text>
-        <Text style={[styles.label, isTab("/") && styles.active]}>
+      {/* 🏠 ANASAYFA (YENİ) */}
+      <TouchableOpacity style={styles.tab} onPress={() => router.push("/home")}>
+        <Text style={[styles.icon, isTab("/home") && styles.active]}>
+          🏠
+        </Text>
+        <Text style={[styles.label, isTab("/home") && styles.active]}>
           Anasayfa
         </Text>
       </TouchableOpacity>
 
-      {/* MESAJLARIM */}
+      {/* 📡 YAYINLAR (ESKİ / = AKTİF ODALAR) */}
+      <TouchableOpacity style={styles.tab} onPress={() => router.push("/")}>
+        <Text style={[styles.icon, isTab("/") && styles.active]}>
+          📡
+        </Text>
+        <Text style={[styles.label, isTab("/") && styles.active]}>
+          Yayınlar
+        </Text>
+      </TouchableOpacity>
+
+      {/* ✉️ MESAJLAR */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/messages")}
@@ -59,25 +65,33 @@ export default function BottomBar() {
           </View>
         )}
 
-        <Text style={[styles.icon, isTab("/messages") && styles.active]}>
+        <Text
+          style={[styles.icon, isTab("/messages") && styles.active]}
+        >
           ✉️
         </Text>
 
-        <Text style={[styles.label, isTab("/messages") && styles.active]}>
-          Mesajlarım
+        <Text
+          style={[styles.label, isTab("/messages") && styles.active]}
+        >
+          Mesajlar
         </Text>
       </TouchableOpacity>
 
-      {/* PROFİL */}
+      {/* 👤 PROFİL */}
       <TouchableOpacity
         style={styles.tab}
         onPress={() => router.push("/profile")}
       >
-        <Text style={[styles.icon, isTab("/profile") && styles.active]}>
+        <Text
+          style={[styles.icon, isTab("/profile") && styles.active]}
+        >
           👤
         </Text>
 
-        <Text style={[styles.label, isTab("/profile") && styles.active]}>
+        <Text
+          style={[styles.label, isTab("/profile") && styles.active]}
+        >
           Profilim
         </Text>
       </TouchableOpacity>
@@ -91,9 +105,9 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     paddingTop: 10,
-    backgroundColor: "#F2F2F5",            // ⭐ Soft premium mat tabbar
+    backgroundColor: "#F2F2F5",
     borderTopWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",       // ⭐ iOS-style soft border
+    borderColor: "rgba(0,0,0,0.08)",
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
@@ -107,13 +121,13 @@ const styles = StyleSheet.create({
 
   icon: {
     fontSize: 22,
-    color: "#7A7A7E",                      // ⭐ Modern muted gray
+    color: "#7A7A7E",
     marginBottom: 2,
   },
 
   label: {
     fontSize: 12,
-    color: "#7A7A7E",                      // ⭐ Premium muted gray
+    color: "#7A7A7E",
   },
 
   active: {

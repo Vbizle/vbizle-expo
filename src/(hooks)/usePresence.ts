@@ -1,33 +1,27 @@
-import { AppState } from "react-native";
-import { useEffect, useRef } from "react";
 import { auth, db } from "@/firebase/firebaseConfig";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { useEffect } from "react";
 
 export function usePresence() {
-  const appState = useRef(AppState.currentState);
-
   useEffect(() => {
-    const sub = AppState.addEventListener("change", async (nextState) => {
-      const user = auth.currentUser;
-      if (!user) return;
+    const user = auth.currentUser;
+    if (!user) return;
 
-      if (nextState === "active") {
-        // Uygulama aktif → kullanıcı online
-        await updateDoc(doc(db, "users", user.uid), {
-          online: true,
-          lastSeen: serverTimestamp(),
-        });
-      } else {
-        // App arka plana, kapandı veya swipe ile kapatıldı → offline
-        await updateDoc(doc(db, "users", user.uid), {
-          online: false,
-          lastSeen: serverTimestamp(),
-        });
-      }
+    const userRef = doc(db, "users", user.uid);
 
-      appState.current = nextState;
+    // 🔥 İlk açılışta online
+    updateDoc(userRef, {
+      online: true,
+      lastSeen: serverTimestamp(),
     });
 
-    return () => sub.remove();
+    // ❤️ HEARTBEAT — app açık olduğu sürece
+    const interval = setInterval(() => {
+      updateDoc(userRef, {
+        lastSeen: serverTimestamp(),
+      });
+    }, 60 * 1000); // 1 dk
+
+    return () => clearInterval(interval);
   }, []);
 }

@@ -1,6 +1,6 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { Alert, AppState } from "react-native";
+import { Alert } from "react-native";
 import { auth, db } from "../../firebase/firebaseConfig";
 
 import {
@@ -9,7 +9,6 @@ import {
   getDoc,
   onSnapshot,
   runTransaction,
-  serverTimestamp,
   updateDoc
 } from "firebase/firestore";
 
@@ -108,24 +107,7 @@ export default function AuthProvider({ children }: any) {
   //  aktif → online: true
   //  arka plan → online: false + lastSeen
   // ========================================================
-  useEffect(() => {
-    if (!firebaseUser) return;
-
-    const userRef = doc(db, "users", firebaseUser.uid);
-
-    const sub = AppState.addEventListener("change", async (state) => {
-      if (state === "active") {
-        await updateDoc(userRef, { online: true });
-      } else {
-        await updateDoc(userRef, {
-          online: false,
-          lastSeen: serverTimestamp(),
-        });
-      }
-    });
-
-    return () => sub.remove();
-  }, [firebaseUser]);
+  
 
   // ========================================================
   // 2) VB CÜZDAN HOOK

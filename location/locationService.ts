@@ -1,6 +1,6 @@
 import { auth, db } from "@/firebase/firebaseConfig";
 import * as Location from "expo-location";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { LOCATION_TASK_NAME } from "./locationTask";
 
 /**
@@ -45,7 +45,7 @@ export async function startLocationTracking() {
   // --------------------------------------------------
   const bg = await Location.requestBackgroundPermissionsAsync();
   console.log("📍 background permission:", bg.status);
-  if (bg.status !== "granted") return false;
+  
 
   // --------------------------------------------------
   // 🔥 İLK KONUMU HEMEN AL VE YAZ (EN KRİTİK KISIM)
@@ -63,14 +63,18 @@ export async function startLocationTracking() {
       current.coords.longitude
     );
 
-    await updateDoc(doc(db, "users", uid), {
-      location: {
-        lat: current.coords.latitude,
-        lng: current.coords.longitude,
-        enabled: true,
-        updatedAt: Date.now(),
-      },
-    });
+    await setDoc(
+  doc(db, "users", uid),
+  {
+    location: {
+      lat: current.coords.latitude,
+      lng: current.coords.longitude,
+      enabled: true,
+      updatedAt: Date.now(),
+    },
+  },
+  { merge: true }
+);
 
     console.log("✅ initial location written to Firestore");
   } catch (err) {
@@ -90,6 +94,10 @@ export async function startLocationTracking() {
   // --------------------------------------------------
   // 🚀 Background location task başlat
   // --------------------------------------------------
+  // 🔐 Background izin VAR MI kontrol et
+const bgPerm = await Location.getBackgroundPermissionsAsync();
+
+if (bgPerm.status === "granted") {
   await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
     accuracy: Location.Accuracy.Balanced,
     distanceInterval: 2500,        // 2.5 km
@@ -100,9 +108,16 @@ export async function startLocationTracking() {
     extras: { uid },
   });
 
-  console.log("✅ startLocationUpdatesAsync STARTED");
+  console.log("✅ Background location task STARTED");
+} else {
+  console.log(
+    "⚠️ Background location NOT started (permission not granted)"
+  );
+}
 
-  return true;
+// 🔴 ÖNEMLİ: fonksiyon ÇÖKMESİN, true dön
+return true;
+
 }
 
 /**
@@ -116,4 +131,4 @@ export async function stopLocationTracking() {
     await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
     console.log("⛔ location task STOPPED manually");
   }
-}
+} 

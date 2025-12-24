@@ -1,4 +1,4 @@
-import React from "react";
+
 import {
   Image,
   StyleSheet,
@@ -9,11 +9,22 @@ import {
 } from "react-native";
 
 import { getLevelBadge } from "@/app/components/level-badges/levelBadgeMap";
-import { auth } from "@/firebase/firebaseConfig";
+import { auth, db } from "@/firebase/firebaseConfig";
 import UserBadgesRow from "@/src/badges/components/UserBadgesRow";
 import { useRealtimeUserBadges } from "@/src/badges/hooks/useRealtimeUserBadges";
 import { getVipColor, getVipRank } from "@/src/utils/vipSystem";
 import { LinearGradient } from "expo-linear-gradient";
+import {
+  doc,
+  onSnapshot
+} from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+
+
+
+
+
+
 
 type Props = {
   uid?: string;
@@ -70,13 +81,34 @@ export default function ProfileHeader({
   isPublic = false, // 🔴 EKLE
    isDealer, // ✅ EKLE
 }: Props) {
-  console.log("🟢 ProfileHeader render uid:", uid);
-
+  
   const hasGallery = gallery.filter(Boolean).length > 0;
  const resolvedUid = isPublic
   ? uid ?? vbId // 🔥 ziyaret edilen kullanıcı
   : auth.currentUser?.uid;
-console.log("🔥 resolvedUid (FINAL):", resolvedUid);
+ const [frameImageUrl, setFrameImageUrl] = useState<string | null>(null);
+
+
+
+useEffect(() => {
+  if (!resolvedUid) return;
+
+  const ref = doc(db, "users", resolvedUid);
+
+  const unsub = onSnapshot(ref, (snap) => {
+    if (!snap.exists()) {
+      setFrameImageUrl(null);
+      return;
+    }
+
+    const data = snap.data();
+    setFrameImageUrl(data?.activeFrame?.imageUrl ?? null);
+  });
+
+  return () => unsub();
+}, [resolvedUid]);
+
+
 
 const { badges } = useRealtimeUserBadges(resolvedUid);
 // 🔒 PLATFORM ROOT (UI SEVİYESİ)
@@ -162,20 +194,29 @@ const LevelBadge = getLevelBadge(liveLevel);
     </TouchableOpacity>
 
       {/* AVATAR */}
-      <TouchableOpacity
-        onPress={onAvatarChange}
-        activeOpacity={0.8}
-        style={styles.avatarWrapper}
-      >
-        <Image
-          source={{
-            uri:
-              avatar ||
-              "https://cdn-icons-png.flaticon.com/512/149/149071.png",
-          }}
-          style={styles.avatar}
-        />
-      </TouchableOpacity>
+     <TouchableOpacity
+  onPress={onAvatarChange}
+  activeOpacity={0.8}
+  style={styles.avatarWrapper}
+>
+  <View style={styles.avatarFrameWrap}>
+  {frameImageUrl && (
+    <Image
+      source={{ uri: frameImageUrl }}
+      style={styles.avatarFrame}
+    />
+  )}
+
+  <Image
+    source={{
+      uri:
+        avatar ||
+        "https://cdn-icons-png.flaticon.com/512/149/149071.png",
+    }}
+    style={styles.avatar}
+  />
+</View>
+</TouchableOpacity>
 
       {/* USER INFO */}
 <View style={styles.userInfo}>
@@ -352,6 +393,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: "#F2F2F7",
     resizeMode: "cover",
+     zIndex: 1,
   },
 
   userInfo: {
@@ -494,5 +536,19 @@ editIconSuperscript: {
   marginLeft: 4,       // nickten biraz ayır
   marginTop: 3,       // 🔥 yukarı kaldırır (üst sağ efekti)
   transform: [{ scaleX: -1 }], // 👈 kalem ucu sola bakar
+},
+avatarFrameWrap: {
+  width: 100,
+  height: 110,
+  alignItems: "center",
+  justifyContent: "center",
+},
+
+avatarFrame: {
+  position: "absolute",
+  width: 102,
+  height: 110,
+  resizeMode: "contain",
+  zIndex: 2,
 },
 });
