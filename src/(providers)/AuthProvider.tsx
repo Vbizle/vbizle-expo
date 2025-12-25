@@ -1,27 +1,24 @@
-import React, {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useRef,
-} from "react";
-import { AppState } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
+import {
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { auth, db } from "../../firebase/firebaseConfig";
 
 import {
-  doc,
-  updateDoc,
-  serverTimestamp,
-  onSnapshot,
   collectionGroup,
+  doc,
   getDoc,
+  onSnapshot,
   runTransaction,
-  setDoc,
+  serverTimestamp,
+  updateDoc
 } from "firebase/firestore";
 
 import { useVbWallet } from "../../src/(hooks)/useVbWallet";
 import { useUi } from "./UiProvider";
+
 
 // ==========================================================
 // VB-ID (SIRALI ID: VB-1, VB-2, VB-3 ...)
@@ -110,6 +107,7 @@ export default function AuthProvider({ children }: any) {
 
     return () => unsubscribe();
   }, []);
+  
 
    // ========================================================
   // VB CÜZDAN HOOK

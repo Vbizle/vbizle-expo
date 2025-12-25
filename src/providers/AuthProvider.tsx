@@ -12,7 +12,9 @@ import {
   updateDoc
 } from "firebase/firestore";
 
+import { usePresenceHeartbeat } from "@/src/presence/usePresenceHeartbeat";
 import { useVbWallet } from "../../src/(hooks)/useVbWallet";
+
 
 
 // ==========================================================
@@ -100,18 +102,7 @@ export default function AuthProvider({ children }: any) {
     return () => unsubscribe();
   }, []);
 
-  // ========================================================
-  //  USER PRESENCE (MOBİL SÜRÜM)
-  //
-  //  AppState ile çalışır:
-  //  aktif → online: true
-  //  arka plan → online: false + lastSeen
-  // ========================================================
-  
-
-  // ========================================================
-  // 2) VB CÜZDAN HOOK
-  // ========================================================
+ usePresenceHeartbeat();
   useVbWallet(firebaseUser);
 
   // ========================================================

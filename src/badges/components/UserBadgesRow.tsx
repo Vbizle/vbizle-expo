@@ -25,6 +25,8 @@ type Props = {
   svpLevel?: number; // 🆕 SVP 1–5
   isDealer?: boolean; // 👈 SADECE BUNU EKLİYORUZ
   wrap?: boolean; // 🔥 SADECE TOP LIST İÇİN
+   hideLevel?: boolean; 
+   hideDealer?: boolean;
 };
 
 export default function UserBadgesRow({
@@ -34,6 +36,8 @@ export default function UserBadgesRow({
   svpLevel = 0,
   isDealer,
   wrap,
+   hideLevel = false,
+    hideDealer = false, // 🔴 YENİ
 }: Props) {
   const vipRank = getVipRank(vipScore);
   const vipColor = getVipColor(vipRank);
@@ -55,26 +59,27 @@ export default function UserBadgesRow({
     wrap === true && styles.wrapRow,
   ]}
 >
-      {/* LV KAPSÜLÜ */}
-      <View
-        style={[
-          styles.levelTag,
-          {
-            backgroundColor: levelInfo.color,
-          },
-        ]}
-      >
-        {LevelBadge && (
-          <View style={{ marginRight: 4, marginTop: 1 }}>
-            <LevelBadge size={11} />
-          </View>
-        )}
-
-        <Text style={styles.levelText}>{levelInfo.label}</Text>
-
-        {/* ✨ Metalik parlama */}
-        <View style={styles.glossOverlay} />
+     {/* LV KAPSÜLÜ */}
+{hideLevel !== true && (
+  <View
+    style={[
+      styles.levelTag,
+      {
+        backgroundColor: levelInfo.color,
+      },
+    ]}
+  >
+    {LevelBadge && (
+      <View style={{ marginRight: 4, marginTop: 1 }}>
+        <LevelBadge size={11} />
       </View>
+    )}
+
+    <Text style={styles.levelText}>{levelInfo.label}</Text>
+
+    <View style={styles.glossOverlay} />
+  </View>
+)}
 
       <View style={{ width: 4 }} />
 
@@ -98,11 +103,11 @@ export default function UserBadgesRow({
       {svpLevel > 0 && <SvpBadge level={svpLevel} />}
 
       {/* 🟡 BAYİ – SABİT STATÜ */}
-      {resolvedIsDealer === true && (
-        <View style={styles.dealerWrapper}>
-          <DealerBadge />
-        </View>
-      )}
+      {hideDealer !== true && resolvedIsDealer === true && (
+  <View style={styles.dealerWrapper}>
+    <DealerBadge />
+  </View>
+)}
     </View>
   );
 }

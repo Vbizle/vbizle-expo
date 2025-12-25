@@ -12,6 +12,7 @@ import {
 
 import { auth } from "@/firebase/firebaseConfig";
 
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { calculateDistanceKm } from "../../../location";
 import FullscreenGallery from "../FullscreenGallery"; // ✅ ZATEN VAR
 import ProfileHeader from "../ProfileHeader";
@@ -24,6 +25,7 @@ import { useUserProfile } from "./hooks/useUserProfile";
 
 
 export default function UserProfileScreen() {
+  const insets = useSafeAreaInsets(); // ✅ BURAYA
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
     
 
@@ -135,7 +137,8 @@ useEffect(() => {
 console.log("🔥 UserProfileScreen data.uid:", data.uid);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+
       {/* 🔥 HEADER */}
       <ProfileHeader
         uid={data.uid}

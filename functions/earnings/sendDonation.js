@@ -2,6 +2,9 @@ const admin = require("firebase-admin");
 const { onRequest } = require("firebase-functions/v2/https");
 const { requireAuth, parseBody } = require("../core/request");
 const { db } = require("../core/helpers");
+const {
+  updateRankingAfterDonation,
+} = require("../rankings/updateRankingAfterDonation");
 
 const { updateTopSupporter } = require("./topSupporters/updateTopSupporter");
 // ✅ YENİ — VIP rank helper (dosya seviyesi, handler DIŞI)
@@ -122,6 +125,13 @@ exports.sendDonation = onRequest(async (req, res) => {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
     });
+    // 🔥 TRANSACTION BAŞARIYLA BİTTİKTEN SONRA
+await updateRankingAfterDonation({
+  fromUid,
+  toUid,
+  amount: amt,
+});
+
 
     return res.json({ success: true });
   } catch (err) {

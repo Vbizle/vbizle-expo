@@ -17,12 +17,18 @@ export default function BottomBar() {
   const path = usePathname();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  
 
   const { unread: systemUnread } = useSystemInbox();
   const dmUnread = useDmUnreadCount();
   const totalUnread = systemUnread + dmUnread;
+  // ❌ Best ekranında bottom bar yok (HOOKLARDAN SONRA)
+  if (path === "/best") {
+    return null;
+  }
 
-  const isTab = (href: string) => path === href;
+  const isTab = (href: string) =>
+  path === href || path.startsWith(href + "/");
 
   return (
     <View
@@ -45,7 +51,7 @@ export default function BottomBar() {
       </TouchableOpacity>
 
       {/* 📡 YAYINLAR (ESKİ / = AKTİF ODALAR) */}
-      <TouchableOpacity style={styles.tab} onPress={() => router.push("/")}>
+      <TouchableOpacity style={styles.tab} onPress={() => router.push("/home/rooms")}>
         <Text style={[styles.icon, isTab("/") && styles.active]}>
           📡
         </Text>

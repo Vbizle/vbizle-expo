@@ -31,12 +31,15 @@ import { isAdmin } from "@/app/admin/core/isAdmin";
 import MarketEntry from "@/app/market/MarketEntry";
 import MarketModal from "@/app/market/MarketModal";
 import { ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import BackpackEntry from "./backpack/BackpackEntry";
 import BackpackModal from "./backpack/BackpackModal";
 import ProfileFollowSection from "./social/ProfileFollowSection";
 import TopSupportersButton from "./top-supporters/components/TopSupportersButton";
 
+
 export default function ProfileScreen() {
+    const insets = useSafeAreaInsets(); // 👈 EKLENECEK
   const router = useRouter();
   const user = auth.currentUser;
   const { clearRoom } = useRoomState();
@@ -237,12 +240,18 @@ export default function ProfileScreen() {
   // RENDER
   // ==========================================================
  return (
-  <View style={styles.container}>
+  <View
+    style={[
+      styles.container,
+      { paddingTop: insets.top } // 👈 SADECE BU
+    ]}
+  >
     {notice ? (
-      <View style={styles.noticeBox}>
-        <Text style={styles.noticeText}>{notice}</Text>
-      </View>
-    ) : null}
+  <View style={[styles.noticeBox, { top: insets.top + 12 }]}>
+    <Text style={styles.noticeText}>{notice}</Text>
+  </View>
+) : null}
+
 
     {/* ❗ SABİT KALSIN */}
     <ProfileTopBar
@@ -337,7 +346,6 @@ const styles = StyleSheet.create({
   },
  noticeBox: {
   position: "absolute",
-  top: 48, // 40 → 48 (notch / status bar için daha güvenli)
   zIndex: 50,
   paddingHorizontal: 16,
   paddingVertical: 8,

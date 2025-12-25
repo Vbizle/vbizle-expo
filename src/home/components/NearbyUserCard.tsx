@@ -6,10 +6,12 @@ import { db } from "@/firebase/firebaseConfig";
 import UserBadgesRow from "@/src/badges/components/UserBadgesRow";
 import { useRealtimeUserBadges } from "@/src/badges/hooks/useRealtimeUserBadges";
 import { resolveDisplayProfile } from "@/src/premium/resolveDisplayProfile";
+import { useComputedOnlineStatus } from "@/src/presence/useComputedOnlineStatus";
 import { formatDistanceKm } from "@/src/utils/formatDistanceKm";
 import { getLevelInfo } from "@/src/utils/levelSystem";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useEffect } from "react";
+
 
 type Props = {
   user: {
@@ -27,6 +29,10 @@ type Props = {
 
 export default function NearbyUserCard({ user }: Props) {
   const router = useRouter();
+  const isOnline = useComputedOnlineStatus({
+  isLoggedIn: true,
+});
+
 
   // 🔴 canlı username / avatar (profil ile senkron)
   const [liveUsername, setLiveUsername] = React.useState<string | undefined>(

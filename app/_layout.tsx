@@ -24,13 +24,19 @@ import MiniRoomBubble from "@/src/components/MiniRoomBubble";
 // Hooks
 import { usePresence } from "@/src/(hooks)/usePresence";
 import { SystemInboxProvider } from "@/src/(providers)/SystemInboxProvider";
+import HomeTopTabs from "@/src/components/HomeTopTabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocationAfterAuth } from "../location";
 import "../location/locationTask";
 
 
 
 
+
+
 function LayoutInner() {
+  const insets = useSafeAreaInsets();
+
   const router = useRouter();
   const segments = useSegments();
 
@@ -71,6 +77,8 @@ function LayoutInner() {
 
   const isRoomPage =
     currentRoute.startsWith("/rooms") || currentRoute === "/create-room";
+    const showHomeTopTabs =
+  currentRoute === "/home" || currentRoute === "/home/rooms";
 
   const isDMPage =
     currentRoute.startsWith("/messages/") &&
@@ -105,55 +113,22 @@ const isSystemPage = currentRoute.startsWith("/system");
     <SafeAreaView
       style={{ flex: 1, backgroundColor: colors.backgroundSoft }}
       edges={["left", "right", "bottom"]}
-    >
-      <StatusBar
-        backgroundColor={colors.backgroundSoft}
-        barStyle={theme === "light" ? "dark-content" : "light-content"}
-      />
-
-      {/* HEADER */}
-      {user && !isRoomPage && !isDMPage && !isAuthPage && (
-        <View
-          style={{
-            width: "100%",
-            paddingTop: STATUS_HEIGHT,
-            paddingBottom: 12,
-            paddingHorizontal: 16,
-            borderBottomWidth: 1,
-            borderColor: colors.border,
-            flexDirection: "row",
-            justifyContent: "space-between",
-            backgroundColor: colors.backgroundSoft,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 24,
-              fontWeight: "bold",
-              color: colors.text,
-            }}
           >
-            Vbizle
-          </Text>
-
-          <View style={{ flexDirection: "row", gap: 20 }}>
-            <Text
-              style={{ color: colors.text }}
-              onPress={() => router.push("/")}
-            >
-              Ana Sayfa
-            </Text>
-            <Text
-              style={{ color: colors.text }}
-              onPress={() => router.push("/rooms")}
-            >
-              Odalar
-            </Text>
-          </View>
-        </View>
-      )}
-
-      {/* CONTENT */}
+              {/* ⬇️ BURASI KRİTİK */}
+    <StatusBar
+      translucent
+      backgroundColor="transparent"
+      barStyle="dark-content"
+    />
+      {showHomeTopTabs && (
+  <View style={{ paddingTop: insets.top }}>
+    <HomeTopTabs
+      currentRoute={currentRoute}
+      onNavigate={(route) => router.push(route)}
+    />
+  </View>
+)}
+         {/* CONTENT */}
       <View
         style={{
           flex: 1,
@@ -197,4 +172,4 @@ export default function Layout() {
       </UiProvider>
     </ThemeProvider>
   );
-}
+} 
